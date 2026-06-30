@@ -1,5 +1,32 @@
 // js/script.js
 
+window.addEventListener("load", () => {
+    const overlay = document.getElementById("entrance-overlay");
+
+    setTimeout(() => {
+        overlay.classList.add("hidden");
+        runEntranceSequence();
+    }, 1200);
+});
+
+function runEntranceSequence() {
+    const sequence = [
+        document.querySelector(".title"),
+        document.querySelector(".subtitle"),
+        document.querySelector(".avatar-wrapper"),
+        document.querySelector(".talks-text"),
+        ...document.querySelectorAll(".link-btn"),
+        document.querySelector(".donate-wrapper")
+    ];
+
+    sequence.forEach((el, index) => {
+        if (!el) return;
+        setTimeout(() => {
+            el.classList.add("fade-in");
+        }, index * 100);
+    });
+}
+
 // 1. Hàm bật tắt QR Code
 document.addEventListener("DOMContentLoaded", () => {
     const btnDonate = document.getElementById("btn-donate");
@@ -13,7 +40,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // 2. Khởi tạo hiệu ứng nghiêng 3D
-// Đảm bảo thư viện VanillaTilt đã load trước khi file này chạy
 if (typeof VanillaTilt !== "undefined") {
     VanillaTilt.init(document.querySelectorAll(".link-btn, .avatar-wrapper"), {
         max: 12,
