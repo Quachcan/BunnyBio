@@ -161,7 +161,7 @@ body {
 }
 
 .qr-container.active {
-    max-height: 600px;
+    max-height: 1000px;
     opacity: 1;
 }
 
