@@ -6,7 +6,7 @@ window.addEventListener("load", () => {
     setTimeout(() => {
         overlay.classList.add("hidden");
         runEntranceSequence();
-    }, 1200);
+    }, 1500);
 });
 
 function runEntranceSequence() {
@@ -23,7 +23,7 @@ function runEntranceSequence() {
         if (!el) return;
         setTimeout(() => {
             el.classList.add("fade-in");
-        }, index * 100);
+        }, index * 150);
     });
 }
 

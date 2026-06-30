@@ -248,21 +248,23 @@ body {
     opacity: 1; /* container hiện ngay, chỉ ẩn từng phần tử con */
 }
 
+/* 1. Trạng thái ẩn ban đầu */
 .title, .subtitle, .avatar-wrapper, .talks-text, .link-btn, .donate-wrapper {
     opacity: 0;
     transform: translateY(20px);
 }
 
-.title.fade-in, .subtitle.fade-in, .avatar-wrapper.fade-in, 
-.talks-text.fade-in, .link-btn.fade-in, .donate-wrapper.fade-in {
-    animation: fadeUpIn 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+/* 2. Cấu hình thời gian trượt mượt mà 
+   (Bỏ .link-btn ra khỏi đây vì nó đã có sẵn transition: all 0.3s nội tại ở phía trên) */
+.title, .subtitle, .avatar-wrapper, .talks-text, .donate-wrapper {
+    transition: opacity 0.6s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-@keyframes fadeUpIn {
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+/* 3. Trạng thái hiển thị (JS sẽ add class này vào) */
+.title.fade-in, .subtitle.fade-in, .avatar-wrapper.fade-in, 
+.talks-text.fade-in, .link-btn.fade-in, .donate-wrapper.fade-in {
+    opacity: 1;
+    transform: translateY(0); /* JS của VanillaTilt giờ đây đã có quyền ghi đè lên dòng này */
 }
 
 .bunny-runner {
@@ -275,6 +277,7 @@ body {
     background-size: 800px 100px;
     image-rendering: pixelated;
     z-index: 10;
+    pointer-events: none;
     animation: 
         bunny-sprite-anim 1.3s steps(8) infinite,
         bunny-run-across 14s linear infinite;
