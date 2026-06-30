@@ -1,0 +1,214 @@
+/* css/style.css */
+:root {
+    --bg-dark: #0a0a0a;
+    --bg-light: #2a2a2a;
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-hover: rgba(255, 255, 255, 0.15);
+    --text-main: #f0f0f0;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-light) 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; 
+    font-family: 'Montserrat', sans-serif;
+    color: var(--text-main);
+    padding: 40px 20px;
+    overflow-x: hidden;
+    position: relative;
+}
+
+
+#particles-js {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: -1;
+}
+
+.container {
+    width: 100%;
+    max-width: 480px; 
+    text-align: center;
+    z-index: 1;
+}
+
+
+.title {
+    font-weight: 900;
+    letter-spacing: 3px;
+    font-size: 1.2rem;
+    color: #888;
+}
+
+.subtitle {
+    font-family: 'Qwitcher Grypen', cursive;
+    font-size: 4rem;
+    color: #fff;
+    margin-top: -15px;
+    margin-bottom: 25px;
+    text-shadow: 0 0 10px rgba(255,255,255,0.2);
+}
+
+.avatar-wrapper {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 10px;
+    transform-style: preserve-3d;
+
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.avatar-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+    border: 2px solid var(--glass-border);
+    transition: all 0.4s ease;
+    transform: translateZ(20px); 
+}
+
+.avatar-wrapper img:hover {
+    transform: translateZ(40px) scale(1.08); 
+    border-color: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 0 25px rgba(255, 255, 255, 0.3);
+}
+
+.talks-text {
+    font-weight: 900;
+    letter-spacing: 5px;
+    font-size: 0.8rem;
+    margin-bottom: 30px;
+}
+
+
+.links-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.link-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 16px 20px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--text-main);
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative;
+    transform-style: preserve-3d;
+    cursor: pointer;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.link-btn i, .link-btn img {
+    position: absolute;
+    left: 20px;
+    font-size: 1.4rem;
+    transform: translateZ(30px);
+}
+
+.link-btn:hover {
+    background: var(--glass-hover);
+    border-color: rgba(255,255,255,0.3);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.donate-wrapper {
+    margin-top: 30px;
+    border-top: 1px solid var(--glass-border);
+    padding-top: 30px;
+}
+
+.kaomoji {
+    font-size: 1rem;
+    color: #888;
+    margin-bottom: 15px;
+}
+
+.qr-container {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 15px;
+    transition: max-height 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease;
+    overflow: hidden;
+
+    display: flex;
+    flex-direction: column; 
+    align-items: center; 
+    gap: 15px;   
+}
+
+.qr-container.active {
+    max-height: 600px;
+    opacity: 1;
+}
+
+.qr-box {
+    background: #fff;
+    width: 220px;
+    height: 220px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease;
+}
+
+.qr-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+@media (min-width: 480px) {
+    .container {
+        max-width: 640px !important; 
+        margin: 0 auto;
+    }
+
+    .qr-container {
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 25px;
+        width: 100%;             
+    }
+
+    .qr-container.active {
+        max-height: 600px; 
+    }
+
+    .qr-box {
+        width: 220px;   
+        height: 220px;  
+        flex: none;
+        border-radius: 20px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4); 
+    }
+}
