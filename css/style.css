@@ -297,3 +297,53 @@ body {
     98% { transform: scaleX(1); }
     100% { left: -10%; transform: scaleX(1); }
 }
+
+/* ==========================================================================
+   HIỆU ỨNG VIỀN NĂNG LƯỢNG (NEON BORDER) CHO NÚT DONATE CÀ RỐT
+   ========================================================================== */
+#btn-donate {
+    border: none !important;            /* Xóa viền tĩnh mặc định */
+    background: transparent !important; /* Bỏ nền cũ để nhường chỗ cho layer mới */
+    overflow: hidden;                   /* Cắt bỏ phần ánh sáng thừa tràn ra ngoài */
+}
+
+/* 1. Lớp năng lượng xoay vòng (Layer dưới cùng) */
+#btn-donate::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1000px;  /* Kích thước khổng lồ để khi xoay không bị hụt góc */
+    height: 1000px;
+    /* Dải màu cam/vàng quét qua giống vệt năng lượng */
+    background: conic-gradient(from 0deg, transparent 70%, #ff8c00 90%, #ffeb3b 100%);
+    animation: neon-spin 2s linear infinite;
+    z-index: -2;
+}
+
+/* 2. Lớp kính mờ che lại phần lõi (Layer giữa) */
+/* 2. Lớp lõi che lại phần trung tâm (ĐỔI TỪ KÍNH MỜ SANG MÀU TỐI ĐẶC) */
+#btn-donate::after {
+    content: '';
+    position: absolute;
+    inset: 2px;          /* Khoảng hở 2px này sẽ ép ánh sáng thành cái viền */
+    background: #1a1a1a; /* Dùng màu xám đen đặc (solid) để che kín tia sáng bên trong */
+    border-radius: 10px; 
+    z-index: -1;
+    transition: background 0.3s ease;
+}
+
+/* 3. Tương tác khi Hover */
+#btn-donate:hover {
+    box-shadow: 0 10px 30px rgba(255, 140, 0, 0.4) !important;
+}
+
+#btn-donate:hover::after {
+    background: #353535; /* Khi đưa chuột vào thì lõi đen sẽ bắt sáng lên một chút */
+}
+
+/* 4. Animation xoay vòng liên tục */
+@keyframes neon-spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
