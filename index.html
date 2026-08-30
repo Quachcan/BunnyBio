@@ -17,7 +17,12 @@
 <body>
 
     <div id="entrance-overlay">
+        <!-- The masked black backdrop lives on its own leaf element, separate
+             from the avatar/text below — so the mask hole can never hide them,
+             only reveal what's behind the backdrop itself. -->
+        <div class="entrance-backdrop"></div>
         <img src="images/Avatar.jpg" alt="Loading" class="entrance-logo">
+        <div class="loading-text" data-text="Bunny sly">Bunny sly</div>
     </div>
 
     <div id="particles-js"></div>
@@ -28,7 +33,9 @@
         <div class="subtitle">Bunny sly</div>
 
         <div class="avatar-wrapper">
-            <img src="images/Avatar.jpg" alt="Bunny Profile">
+            <!-- Intentionally empty: the loading-screen avatar (.entrance-logo)
+                 is this same <img> element — script.js moves it in here once
+                 loading finishes, instead of swapping to a lookalike copy. -->
         </div>
         <div class="talks-text">TALKS</div>
 

@@ -1,4 +1,14 @@
 /* css/style.css */
+
+/* Registering this as an animatable <length> is what lets the browser smoothly
+   interpolate it in a transition below — a plain custom property can only jump
+   instantly between values, it can't tween. */
+@property --reveal-radius {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 0px;
+}
+
 :root {
     --bg-dark: #0a0a0a;
     --bg-light: #2a2a2a;
@@ -19,12 +29,20 @@ body {
     min-height: 100vh;
     display: flex;
     justify-content: center;
-    align-items: flex-start; 
+    align-items: flex-start;
     font-family: 'Montserrat', sans-serif;
     color: var(--text-main);
     padding: 40px 20px;
     overflow-x: hidden;
     position: relative;
+
+    /* Custom cursor: little carrot, tip near top-left acts as the hotspot */
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg transform='rotate(-20 14 14)'%3E%3Cpath d='M14 4c3 0 5.2 2.2 5.2 5.2c0 6.5-2.8 11.6-5.2 16c-2.4-4.4-5.2-9.5-5.2-16C8.8 6.2 11 4 14 4z' fill='%23ff8c42' stroke='%232b1400' stroke-width='1.2'/%3E%3Cpath d='M14 4.5c-0.8-2.6-2.6-3.6-4.6-3.7' stroke='%2347c96b' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3Cpath d='M14 4.5c0-2.7 1-4.4 2.8-5.3' stroke='%2347c96b' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3Cpath d='M14 4.5c1-2.4 2.8-2.8 4.6-2.2' stroke='%2347c96b' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E") 6 4, auto;
+}
+
+/* Playful paw cursor over anything clickable — swap from the carrot to signal "tap me" */
+a, button, .link-btn, #btn-donate {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3E%3Cg fill='%23f0f0f0' stroke='%232b1400' stroke-width='1'%3E%3Cellipse cx='15' cy='19' rx='8' ry='6.5'/%3E%3Cellipse cx='6' cy='10' rx='3' ry='4'/%3E%3Cellipse cx='13' cy='5.5' rx='3' ry='4'/%3E%3Cellipse cx='20' cy='5.5' rx='3' ry='4'/%3E%3Cellipse cx='26' cy='11' rx='3' ry='4'/%3E%3C/g%3E%3C/svg%3E") 6 6, pointer;
 }
 
 
@@ -66,6 +84,11 @@ body {
     height: 350px;
     margin: 0 auto 10px;
     transform-style: preserve-3d;
+    /* Sits above #entrance-overlay (z-index: 999) so the avatar stays visible
+       — morphing right on top of the still-solid black backdrop — instead of
+       being hidden behind it until the reveal punches a hole. */
+    position: relative;
+    z-index: 1000;
 
     border-radius: 16px;
     overflow: hidden;
@@ -216,31 +239,96 @@ body {
 #entrance-overlay {
     position: fixed;
     inset: 0;
-    background: var(--bg-dark);
     z-index: 999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: opacity 0.8s ease, visibility 0.8s ease;
+    transition: visibility var(--reveal-duration, 0.9s) ease;
 }
 
 #entrance-overlay.hidden {
-    opacity: 0;
     visibility: hidden;
 }
 
+/* The actual black layer, kept separate from .entrance-logo/.loading-text
+   (its siblings, painted after it so they sit on top) — a mask on THIS
+   element can never hide them, since mask only affects an element's own
+   descendants, and neither the avatar nor the text live inside it. */
+.entrance-backdrop {
+    position: absolute;
+    inset: 0;
+    background: var(--bg-dark);
+
+    /* Circular "iris" hole. JS keeps --reveal-x/-y/-radius tracking the
+       avatar's live position every frame (bounce, then flight+grow) via
+       requestAnimationFrame, so the hole always hugs it — then for the
+       final page reveal, --reveal-radius transitions from wherever
+       tracking left it out to a screen-covering size. */
+    --reveal-x: 50%;
+    --reveal-y: 50%;
+    -webkit-mask-image: radial-gradient(circle at var(--reveal-x) var(--reveal-y), transparent 0, transparent var(--reveal-radius), black calc(var(--reveal-radius) + 1px), black 100%);
+    mask-image: radial-gradient(circle at var(--reveal-x) var(--reveal-y), transparent 0, transparent var(--reveal-radius), black calc(var(--reveal-radius) + 1px), black 100%);
+    transition: --reveal-radius var(--reveal-duration, 0.9s) ease;
+}
+
 .entrance-logo {
+    /* Positioned absolutely (not flex) so removing it from the DOM at morph
+       time — or anything else changing here — never shifts .loading-text,
+       which used to be its flex sibling. */
+    position: absolute;
+    top: 50%;
+    left: 50%;
     width: 90px;
     height: 90px;
     border-radius: 50%;
     object-fit: cover;
-    animation: entrance-pulse 1.2s ease-in-out infinite;
+    animation: entrance-bounce 0.9s cubic-bezier(0.45, 0, 0.55, 1) infinite;
     border: 2px solid var(--glass-border);
+    /* transform-origin stays centered so the bounce + later morph scale from the same point */
+    will-change: transform, border-radius;
 }
 
-@keyframes entrance-pulse {
-    0%, 100% { transform: scale(1); opacity: 0.7; }
-    50% { transform: scale(1.1); opacity: 1; }
+@keyframes entrance-bounce {
+    0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+    50% { transform: translate(-50%, -50%) translateY(-34px); }
+}
+
+/* Outline-only text that fills left-to-right like a loading bar, synced to --loading-duration (set from JS) */
+.loading-text {
+    /* Positioned absolutely (not flex) — independent of .entrance-logo, so
+       it doesn't jump when that element is removed from the DOM at morph
+       time. Sits roughly where it used to (avatar radius + old margin-top
+       below center). */
+    position: absolute;
+    top: calc(50% + 85px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: 90vw;
+    text-align: center;
+    font-family: 'Qwitcher Grypen', cursive;
+    font-size: clamp(3.5rem, 14vw, 5.5rem);
+    letter-spacing: 1px;
+    color: transparent;
+    -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.85);
+    /* Fades out quickly once the reveal starts (JS toggles this), instead of
+       sitting frozen on top of the now-visible page until the whole overlay
+       disappears. */
+    transition: opacity 0.4s ease;
+}
+
+.loading-text::before {
+    content: attr(data-text);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    color: #fff;
+    -webkit-text-stroke: 0;
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+    clip-path: inset(0 100% 0 0);
+    animation: loading-text-fill var(--loading-duration, 1.4s) ease forwards;
+}
+
+@keyframes loading-text-fill {
+    to { clip-path: inset(0 0 0 0); }
 }
 
 /* Bỏ phần .container / .container.revealed cũ, thay bằng: */
@@ -248,20 +336,24 @@ body {
     opacity: 1; /* container hiện ngay, chỉ ẩn từng phần tử con */
 }
 
-/* 1. Trạng thái ẩn ban đầu */
-.title, .subtitle, .avatar-wrapper, .talks-text, .link-btn, .donate-wrapper {
+/* 1. Trạng thái ẩn ban đầu
+   .avatar-wrapper KHÔNG nằm trong nhóm này nữa: nó luôn hiển thị sẵn (rỗng,
+   che bởi overlay loading phía trên) vì giờ avatar thật là chính cái
+   .entrance-logo được JS dời vào đây — không có hiệu ứng fade-in riêng nào
+   cho nó cả, chỉ có animation "bay vào" lúc dời DOM. */
+.title, .subtitle, .talks-text, .link-btn, .donate-wrapper {
     opacity: 0;
     transform: translateY(20px);
 }
 
-/* 2. Cấu hình thời gian trượt mượt mà 
+/* 2. Cấu hình thời gian trượt mượt mà
    (Bỏ .link-btn ra khỏi đây vì nó đã có sẵn transition: all 0.3s nội tại ở phía trên) */
-.title, .subtitle, .avatar-wrapper, .talks-text, .donate-wrapper {
+.title, .subtitle, .talks-text, .donate-wrapper {
     transition: opacity 0.6s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 /* 3. Trạng thái hiển thị (JS sẽ add class này vào) */
-.title.fade-in, .subtitle.fade-in, .avatar-wrapper.fade-in, 
+.title.fade-in, .subtitle.fade-in,
 .talks-text.fade-in, .link-btn.fade-in, .donate-wrapper.fade-in {
     opacity: 1;
     transform: translateY(0); /* JS của VanillaTilt giờ đây đã có quyền ghi đè lên dòng này */
