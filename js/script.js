@@ -18,8 +18,10 @@ document.documentElement.style.setProperty("--loading-duration", `${LOADING_DURA
 document.documentElement.style.setProperty("--reveal-duration", `${REVEAL_DURATION_MS / 1000}s`);
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-// Bật/tắt bởi script trong <head> (theo ngày, hoặc ?theme=halloween)
+// Theme theo mùa: bật/tắt bởi script trong <head> (theo ngày, hoặc ?theme=...)
 const isHalloween = document.documentElement.classList.contains("halloween");
+const isChristmas = document.documentElement.classList.contains("christmas");
+const isTet = document.documentElement.classList.contains("tet");
 
 let holeTrackingRAF = null;
 
@@ -218,6 +220,7 @@ function runEntranceSequence() {
     const sequence = [
         document.querySelector(".title"),
         document.querySelector(".subtitle"),
+        document.querySelector(".tet-greeting"), // chỉ có khi bật theme Tết
         document.querySelector(".talks-text"),
         ...document.querySelectorAll(".link-btn"),
         document.querySelector(".donate-wrapper")
@@ -287,6 +290,101 @@ function spawnHalloweenCritters() {
     });
 }
 
+// 5. Theme Giáng sinh: đổi chữ + sao lấp lánh và nền tuyết dưới chân thỏ
+if (isChristmas) {
+    applyChristmasText();
+    spawnChristmasScenery();
+}
+
+function applyChristmasText() {
+    const kaomoji = document.querySelector(".kaomoji");
+    if (kaomoji) kaomoji.textContent = "🎄 ε ⋒ x ⋒ 3 ❄️";
+
+    const donateBtn = document.getElementById("btn-donate");
+    if (donateBtn) donateBtn.innerHTML = '<i class="fa-solid fa-gift"></i> Gift me a carrot 🎁🐰';
+}
+
+function spawnChristmasScenery() {
+    // Nền tuyết đứng yên nên vẫn hiện cả khi giảm chuyển động (CSS tự tắt nhấp nháy của sao)
+    const ground = document.createElement("div");
+    ground.className = "christmas-snowground";
+    document.body.appendChild(ground);
+
+    // [top, left, thời gian nhấp nháy, độ trễ]
+    const stars = [
+        ["6vh", "8vw", "2.2s", "0s"],
+        ["14vh", "88vw", "2.8s", "0.7s"],
+        ["4vh", "62vw", "2.5s", "1.3s"],
+        ["24vh", "20vw", "3s", "0.4s"],
+        ["30vh", "78vw", "2.4s", "1.8s"]
+    ];
+    stars.forEach(([top, left, duration, delay]) => {
+        const star = document.createElement("div");
+        star.className = "christmas-star";
+        star.style.top = top;
+        star.style.left = left;
+        star.style.setProperty("--star-duration", duration);
+        star.style.setProperty("--star-delay", delay);
+        document.body.appendChild(star);
+    });
+}
+
+// 6. Theme Tết: lời chúc + đèn lồng treo và pháo hoa trên nền
+if (isTet) {
+    applyTetText();
+    spawnTetScenery();
+}
+
+function applyTetText() {
+    const subtitle = document.querySelector(".subtitle");
+    if (subtitle) {
+        const greeting = document.createElement("div");
+        greeting.className = "tet-greeting";
+        greeting.textContent = "Chúc Mừng Năm Mới";
+        subtitle.after(greeting);
+    }
+
+    const kaomoji = document.querySelector(".kaomoji");
+    if (kaomoji) kaomoji.textContent = "🧧 ε ⋒ x ⋒ 3 🌸";
+
+    const donateBtn = document.getElementById("btn-donate");
+    if (donateBtn) donateBtn.innerHTML = '<i class="fa-solid fa-envelope"></i> Lì xì cho thỏ 🧧🐰';
+}
+
+function spawnTetScenery() {
+    // Đèn lồng đứng yên được khi giảm chuyển động (CSS tự tắt đung đưa)
+    // [left, thời gian đung đưa, độ trễ]
+    const lanterns = [["3vw", "3.4s", "0s"], ["11vw", "3.9s", "0.6s"], ["calc(97vw - 40px)", "3.6s", "0.3s"], ["calc(89vw - 40px)", "4.1s", "0.9s"]];
+    lanterns.forEach(([left, duration, delay]) => {
+        const lantern = document.createElement("div");
+        lantern.className = "tet-lantern";
+        lantern.style.left = left;
+        lantern.style.setProperty("--lantern-duration", duration);
+        lantern.style.setProperty("--lantern-delay", delay);
+        document.body.appendChild(lantern);
+    });
+
+    if (prefersReducedMotion) return;
+
+    // [top, left, màu, thời gian, độ trễ]
+    const fireworks = [
+        ["16vh", "14vw", "#ffcc4d", "3.2s", "0.5s"],
+        ["10vh", "82vw", "#ff8fb1", "3.6s", "1.6s"],
+        ["38vh", "88vw", "#ffd23f", "3.4s", "2.4s"],
+        ["44vh", "8vw", "#ff6b6b", "3.8s", "1.1s"]
+    ];
+    fireworks.forEach(([top, left, color, duration, delay]) => {
+        const fw = document.createElement("div");
+        fw.className = "tet-firework";
+        fw.style.top = top;
+        fw.style.left = left;
+        fw.style.color = color;
+        fw.style.setProperty("--fw-duration", duration);
+        fw.style.setProperty("--fw-delay", delay);
+        document.body.appendChild(fw);
+    });
+}
+
 // Thư viện CDN được tải bằng "defer" (sau file này), nên phải đợi DOMContentLoaded
 // mới chắc chắn chúng đã chạy xong. Người dùng bật giảm chuyển động thì bỏ qua cả hai.
 document.addEventListener("DOMContentLoaded", () => {
@@ -310,48 +408,86 @@ function initTilt() {
 
 // 3. Khởi tạo hệ thống hạt nền (Particles)
 function initParticles() {
-    if (typeof particlesJS !== "undefined") {
-        particlesJS("particles-js", {
-            "particles": {
-                "number": { "value": 50, "density": { "enable": true, "value_area": 800 } },
-                // Halloween: đốm ma trơi cam/xanh/tím, sáng hơn một chút
-                "color": { "value": isHalloween ? ["#ff7518", "#7cff4f", "#b48cff"] : "#ffffff" },
-                "shape": { "type": "circle" },
-                "opacity": {
-                    "value": isHalloween ? 0.45 : 0.2,
-                    "random": true, 
-                    "anim": { "enable": true, "speed": 1, "opacity_min": 0.05, "sync": false }
-                },
-                "size": { 
-                    "value": isHalloween ? 3 : 2,
-                    "random": true
-                },
-                "line_linked": {
-                    "enable": true,
-                    "distance": 150,
-                    "color": isHalloween ? "#9b4dff" : "#ffffff", // mạng nhện tím
-                    "opacity": isHalloween ? 0.15 : 0.1,
-                    "width": 1
-                },
-                "move": {
-                    "enable": true,
-                    "speed": 1,
-                    "direction": isHalloween ? "top" : "none", // ma trơi bay lên
-                    "random": true, 
-                    "out_mode": "out" 
-                }
+    if (typeof particlesJS === "undefined") return;
+
+    const config = {
+        "particles": {
+            "number": { "value": 50, "density": { "enable": true, "value_area": 800 } },
+            "color": { "value": "#ffffff" },
+            "shape": { "type": "circle" },
+            "opacity": {
+                "value": 0.2,
+                "random": true,
+                "anim": { "enable": true, "speed": 1, "opacity_min": 0.05, "sync": false }
             },
-            "interactivity": {
-                "detect_on": "window",
-                "events": {
-                    "onhover": { "enable": true, "mode": "grab" },
-                    "resize": true
-                },
-                "modes": {
-                    "grab": { "distance": 150, "line_linked": { "opacity": 0.3 } }
-                }
+            "size": {
+                "value": 2,
+                "random": true
             },
-            "retina_detect": true
-        });
+            "line_linked": {
+                "enable": true,
+                "distance": 150,
+                "color": "#ffffff",
+                "opacity": 0.1,
+                "width": 1
+            },
+            "move": {
+                "enable": true,
+                "speed": 1,
+                "direction": "none",
+                "random": true,
+                "out_mode": "out"
+            }
+        },
+        "interactivity": {
+            "detect_on": "window",
+            "events": {
+                "onhover": { "enable": true, "mode": "grab" },
+                "resize": true
+            },
+            "modes": {
+                "grab": { "distance": 150, "line_linked": { "opacity": 0.3 } },
+                "repulse": { "distance": 90, "duration": 0.4 }
+            }
+        },
+        "retina_detect": true
+    };
+    const p = config.particles;
+
+    if (isHalloween) {
+        // Đốm ma trơi cam/xanh/tím bay lên, nối nhau bằng mạng nhện tím
+        p.color.value = ["#ff7518", "#7cff4f", "#b48cff"];
+        p.opacity.value = 0.45;
+        p.size.value = 3;
+        p.line_linked.color = "#9b4dff";
+        p.line_linked.opacity = 0.15;
+        p.move.direction = "top";
     }
+
+    if (isChristmas) {
+        // Tuyết rơi: nhiều hạt hơn, to hơn, không nối dây; rê chuột thì tuyết dạt ra
+        p.number.value = 90;
+        p.opacity.value = 0.75;
+        p.opacity.anim.enable = false;
+        p.size.value = 3.5;
+        p.line_linked.enable = false;
+        p.move.direction = "bottom";
+        p.move.speed = 1.3;
+        config.interactivity.events.onhover.mode = "repulse";
+    }
+
+    if (isTet) {
+        // Cánh hoa mai vàng + hoa đào hồng rơi chéo theo gió
+        p.number.value = 45;
+        p.color.value = ["#ffd23f", "#ffe680", "#ff8fb1", "#ffb7c5"];
+        p.opacity.value = 0.85;
+        p.opacity.anim.enable = false;
+        p.size.value = 4.5;
+        p.line_linked.enable = false;
+        p.move.direction = "bottom-right";
+        p.move.speed = 1.4;
+        config.interactivity.events.onhover.mode = "repulse";
+    }
+
+    particlesJS("particles-js", config);
 }

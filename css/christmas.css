@@ -1,0 +1,214 @@
+/* css/christmas.css
+   Theme Giáng sinh — mọi rule đều nằm dưới html.christmas (class do script trong
+   <head> bật theo ngày hoặc ?theme=christmas), nên khi không bật thì file này
+   không đụng gì tới giao diện gốc. */
+
+html.christmas {
+    --bg-dark: #06121f;
+    --bg-light: #0f2a3a;
+    --glass-bg: rgba(220, 240, 255, 0.07);
+    --glass-border: rgba(255, 209, 102, 0.25);
+    --glass-hover: rgba(230, 57, 70, 0.18);
+    --text-main: #f5fbff;
+    --santa: #e63946;
+    --gold: #ffd166;
+    --pine: #2fbf71;
+    --snow: #f5fbff;
+}
+
+/* --- Nền & con trỏ ------------------------------------------------------- */
+
+html.christmas body {
+    background:
+        radial-gradient(ellipse at 50% -10%, rgba(255, 209, 102, 0.14), transparent 55%),
+        linear-gradient(180deg, var(--bg-dark) 0%, var(--bg-light) 100%);
+    background-attachment: fixed;
+
+    /* Gậy kẹo sọc đỏ trắng thay cho cà rốt — hotspot ở đỉnh móc */
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M22 30V10a7 7 0 0 0-14 0v3' fill='none' stroke='%232b1400' stroke-width='6.5' stroke-linecap='round'/%3E%3Cpath d='M22 30V10a7 7 0 0 0-14 0v3' fill='none' stroke='%23ffffff' stroke-width='4.5' stroke-linecap='round'/%3E%3Cpath d='M22 30V10a7 7 0 0 0-14 0v3' fill='none' stroke='%23e63946' stroke-width='4.5' stroke-dasharray='3 3'/%3E%3C/svg%3E") 15 3, auto;
+}
+
+/* Chân thỏ đỏ ông già Noel thay cho chân thỏ trắng */
+html.christmas a,
+html.christmas button,
+html.christmas .link-btn,
+html.christmas #btn-donate {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3E%3Cg fill='%23e63946' stroke='%23ffffff' stroke-width='1.2'%3E%3Cellipse cx='15' cy='19' rx='8' ry='6.5'/%3E%3Cellipse cx='6' cy='10' rx='3' ry='4'/%3E%3Cellipse cx='13' cy='5.5' rx='3' ry='4'/%3E%3Cellipse cx='20' cy='5.5' rx='3' ry='4'/%3E%3Cellipse cx='26' cy='11' rx='3' ry='4'/%3E%3C/g%3E%3C/svg%3E") 6 6, pointer;
+}
+
+/* --- Chữ ------------------------------------------------------------------ */
+
+html.christmas .title {
+    color: var(--gold);
+    text-shadow: 0 0 12px rgba(255, 209, 102, 0.55);
+}
+
+html.christmas .subtitle {
+    color: #fff;
+    text-shadow: 0 0 10px rgba(230, 57, 70, 0.9), 0 0 28px rgba(230, 57, 70, 0.45);
+}
+
+html.christmas .talks-text {
+    color: var(--pine);
+    text-shadow: 0 0 8px rgba(47, 191, 113, 0.6);
+}
+
+html.christmas .kaomoji {
+    color: var(--gold);
+}
+
+/* --- Màn loading ---------------------------------------------------------- */
+
+html.christmas .entrance-logo {
+    border-color: var(--gold);
+    box-shadow: 0 0 18px rgba(255, 209, 102, 0.75), 0 0 40px rgba(230, 57, 70, 0.35);
+}
+
+/* Chữ "Bunny sly" được tô đầy bằng sọc kẹo đỏ trắng */
+html.christmas .loading-text {
+    -webkit-text-stroke-color: rgba(255, 209, 102, 0.85);
+}
+
+html.christmas .loading-text::before {
+    color: transparent;
+    background: repeating-linear-gradient(-45deg, var(--santa) 0 10px, #fff 10px 20px);
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: none;
+    filter: drop-shadow(0 0 10px rgba(230, 57, 70, 0.6));
+}
+
+/* --- Avatar: dây đèn nhấp nháy + mũ Noel ở góc ------------------------- */
+
+html.christmas .avatar-wrapper {
+    box-shadow: 0 0 25px rgba(255, 209, 102, 0.35), 0 0 60px rgba(230, 57, 70, 0.15);
+}
+
+html.christmas .avatar-wrapper img {
+    border-color: rgba(255, 209, 102, 0.6);
+}
+
+/* Dây đèn chạy dọc mép trên ảnh */
+html.christmas .avatar-wrapper::before {
+    content: "";
+    position: absolute;
+    top: 4px;
+    left: 0;
+    right: 0;
+    height: 16px;
+    pointer-events: none;
+    /* translateZ cao hơn ảnh (20–40px) để luôn nằm trên avatar */
+    transform: translateZ(45px);
+    z-index: 1;
+    background:
+        radial-gradient(circle at 9px 10px, #ff4d5e 0 4px, transparent 5px),
+        radial-gradient(circle at 21px 12px, var(--gold) 0 4px, transparent 5px),
+        radial-gradient(circle at 33px 10px, #3ddc84 0 4px, transparent 5px),
+        radial-gradient(circle at 45px 12px, #6ec6ff 0 4px, transparent 5px),
+        linear-gradient(transparent 5px, rgba(20, 40, 30, 0.9) 5px 6px, transparent 6px);
+    background-size: 48px 16px;
+    background-repeat: repeat-x;
+    animation: christmas-lights 1.4s steps(2) infinite;
+}
+
+@keyframes christmas-lights {
+    from { filter: brightness(0.7) drop-shadow(0 0 2px rgba(255, 255, 255, 0.3)); }
+    to   { filter: brightness(1.35) drop-shadow(0 0 6px rgba(255, 209, 102, 0.9)); }
+}
+
+/* Mũ Noel nghiêng ở góc trên bên trái */
+html.christmas .avatar-wrapper::after {
+    content: "";
+    position: absolute;
+    top: 14px;
+    left: 6px;
+    width: 84px;
+    height: 68px;
+    pointer-events: none;
+    transform: translateZ(46px) rotate(-18deg);
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 80'%3E%3Cpath d='M12 58C20 22 44 6 70 11C83 14 89 27 88 37C80 29 70 27 62 31C54 36 55 49 62 58Z' fill='%23e63946' stroke='%237a1219' stroke-width='2'/%3E%3Crect x='6' y='54' width='62' height='18' rx='9' fill='%23f5fbff'/%3E%3Ccircle cx='88' cy='41' r='9' fill='%23f5fbff'/%3E%3C/svg%3E") no-repeat center / contain;
+    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.4));
+}
+
+/* --- Nút link: tuyết đọng trên nóc nút ---------------------------------- */
+
+html.christmas .link-btn:hover {
+    border-color: rgba(255, 209, 102, 0.55);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 18px rgba(230, 57, 70, 0.3);
+}
+
+html.christmas .link-btn:not(#btn-donate)::after {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 8px;
+    right: 8px;
+    height: 12px;
+    pointer-events: none;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 16' preserveAspectRatio='none'%3E%3Cpath fill='%23f5fbff' d='M0 12Q4 4 18 5Q30 0 45 4Q60 1 75 5Q95 0 110 4Q130 1 150 5Q170 0 185 4Q198 4 200 12Q190 15 180 12Q170 16 160 13Q140 15 120 12Q100 16 80 13Q60 15 40 12Q20 16 0 12Z'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+}
+
+/* --- Nút donate: viền năng lượng đỏ → xanh → vàng ----------------------- */
+
+html.christmas #btn-donate::before {
+    background: conic-gradient(from 0deg, transparent 55%, var(--santa) 72%, var(--pine) 86%, var(--gold) 100%);
+}
+
+html.christmas #btn-donate::after {
+    background: #0b1d2a;
+}
+
+html.christmas #btn-donate:hover {
+    box-shadow: 0 10px 30px rgba(230, 57, 70, 0.4), 0 0 22px rgba(255, 209, 102, 0.3) !important;
+}
+
+html.christmas #btn-donate:hover::after {
+    background: #15303f;
+}
+
+/* --- Thỏ chạy: nón nâu → nón đỏ ông già Noel ---------------------------- */
+
+html.christmas .bunny-runner {
+    filter: hue-rotate(-30deg) saturate(2.6) brightness(1.05) drop-shadow(0 0 5px rgba(255, 209, 102, 0.5));
+}
+
+/* --- Sao lấp lánh + nền tuyết dưới chân thỏ (JS tạo các phần tử này) ---- */
+
+.christmas-star {
+    position: fixed;
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+    z-index: -1; /* sau nội dung, cùng lớp với #particles-js */
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%23ffd166' d='M10 0L12 8L20 10L12 12L10 20L8 12L0 10L8 8Z'/%3E%3C/svg%3E") no-repeat center / contain;
+    animation: christmas-twinkle var(--star-duration, 2.4s) ease-in-out var(--star-delay, 0s) infinite;
+}
+
+@keyframes christmas-twinkle {
+    0%, 100% { opacity: 0.15; transform: scale(0.6) rotate(0deg); }
+    50%      { opacity: 0.9;  transform: scale(1) rotate(45deg); }
+}
+
+.christmas-snowground {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 34px;
+    pointer-events: none;
+    z-index: -1;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 34' preserveAspectRatio='none'%3E%3Cpath fill='%23e8f4ff' d='M0 14Q30 4 60 12T120 10T180 14T240 8T300 13T360 9T400 12V34H0Z'/%3E%3Cpath fill='%23ffffff' opacity='0.6' d='M0 20Q40 12 80 18T160 17T240 19T320 15T400 18V34H0Z'/%3E%3C/svg%3E") no-repeat bottom / 100% 100%;
+    opacity: 0.85;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .christmas-star {
+        animation: none;
+        opacity: 0.5;
+    }
+
+    html.christmas .avatar-wrapper::before {
+        animation: none;
+    }
+}

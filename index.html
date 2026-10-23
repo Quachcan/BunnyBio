@@ -23,15 +23,36 @@
     <script>
         document.documentElement.classList.add("js");
 
-        // Theme Halloween tự bật từ 20/10 đến hết 1/11 (giờ máy người xem).
-        // Xem thử bất kỳ lúc nào: ?theme=halloween — tắt hẳn: ?theme=default
+        // Theme theo mùa — tự bật trong khoảng ngày [tháng, ngày] (giờ máy người xem).
+        // Xem thử bất kỳ lúc nào: ?theme=halloween / christmas / tet — tắt hẳn: ?theme=default
+        // Thêm mùa mới: thêm 1 dòng ở đây + 1 file css/<tên>.css (khoảng ngày không vắt qua năm mới).
         (function () {
-            var theme = new URLSearchParams(location.search).get("theme");
-            var now = new Date(), month = now.getMonth(), day = now.getDate();
-            var inSeason = (month === 9 && day >= 20) || (month === 10 && day <= 1);
-            if (theme === "halloween" || (inSeason && theme !== "default")) {
-                document.documentElement.classList.add("halloween");
+            var seasons = [
+                { name: "halloween", from: [10, 20], to: [11, 1] },
+                { name: "christmas", from: [12, 10], to: [12, 31] }
+            ];
+
+            // Tết theo âm lịch nên mỗi năm một ngày: [tháng, ngày] dương lịch của Mùng 1.
+            // Bật từ 10 ngày trước Tết đến hết Mùng 7 — nhớ thêm năm mới vào đây khi hết danh sách.
+            var tetMung1 = { 2027: [2, 6], 2028: [1, 26], 2029: [2, 13], 2030: [2, 3], 2031: [1, 23] };
+
+            var param = new URLSearchParams(location.search).get("theme");
+            var now = new Date(), today = (now.getMonth() + 1) * 100 + now.getDate();
+            var active = null;
+            seasons.forEach(function (s) {
+                var inSeason = today >= s.from[0] * 100 + s.from[1] && today <= s.to[0] * 100 + s.to[1];
+                if (param === s.name || (!param && inSeason)) active = s.name;
+            });
+
+            var mung1 = tetMung1[now.getFullYear()];
+            var dayMs = 24 * 60 * 60 * 1000;
+            if (mung1) {
+                var tet = new Date(now.getFullYear(), mung1[0] - 1, mung1[1]);
+                var daysFromTet = Math.floor((now - tet) / dayMs);
+                if (!param && daysFromTet >= -10 && daysFromTet <= 6) active = "tet";
             }
+            if (param === "tet") active = "tet";
+            if (active) document.documentElement.classList.add(active);
         })();
 
         setTimeout(function () {
@@ -54,8 +75,10 @@
     
     <!-- Link tới file giao diện của bạn -->
     <link rel="stylesheet" href="css/style.css">
-    <!-- Theme theo mùa: mọi rule đều nằm dưới html.halloween, không bật thì không ảnh hưởng gì -->
+    <!-- Theme theo mùa: mọi rule đều nằm dưới html.<tên mùa>, không bật thì không ảnh hưởng gì -->
     <link rel="stylesheet" href="css/halloween.css">
+    <link rel="stylesheet" href="css/christmas.css">
+    <link rel="stylesheet" href="css/tet.css">
 </head>
 
 <body>
