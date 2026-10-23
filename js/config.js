@@ -18,10 +18,14 @@ const BIO_CONFIG = {
         // "images/gallery/04.webp"
     ],
 
-    // Nhạc nền — mặc định tắt, khách bấm nút ♪ ở góc trên mới phát. Để "" thì ẩn nút.
-    // Ví dụ: "audio/bgm.mp3"
-    music: "audio/bgm.m4a",
+    // Playlist nhạc nền — phát theo thứ tự, hết bài tự sang bài kế, hết danh sách quay lại bài đầu.
+    // Tự phát nếu trình duyệt cho phép, không thì phát ở lần chạm đầu tiên. Để [] thì ẩn trình phát.
+    // Thêm bài: bỏ file vào thư mục audio/ rồi thêm 1 dòng { src: "...", title: "..." }
+    music: [
+        { src: "audio/606.m4a", title: "6.0.6" },
+        { src: "audio/nguyet.m4a", title: "Nguyệt" }
+    ],
 
-    // Tên bài hiện trên trình phát nhạc. Để "" thì hiện "Nhạc nền".
-    musicTitle: "Bunny's playlist"
+    // Tên ca sĩ hiện sau tên bài, ví dụ "Nguyệt · Bunny". Để "" thì chỉ hiện tên bài.
+    musicArtist: ""
 };

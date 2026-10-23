@@ -795,7 +795,7 @@ html:not(.js) #entrance-overlay {
 }
 
 .music-player.expanded .music-panel {
-    width: 190px;
+    width: 210px;
     opacity: 1;
 }
 
@@ -814,6 +814,39 @@ html:not(.js) #entrance-overlay {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* Nút bài trước / bài sau (chỉ hiện khi playlist có từ 2 bài) */
+.music-skip {
+    display: inline-flex;
+    gap: 2px;
+}
+
+.music-skip[hidden] {
+    display: none;
+}
+
+.music-skip button {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-main);
+    font-size: 0.7rem;
+    opacity: 0.75;
+    transition: opacity 0.2s ease, background 0.2s ease;
+}
+
+.music-skip button:hover,
+.music-skip button:focus-visible {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.12);
+    outline: none;
 }
 
 /* 3 vạch sóng nhạc nhảy lên xuống khi đang phát */
@@ -927,7 +960,13 @@ html:not(.js) #entrance-overlay {
         bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     }
 
+    /* Chừa chỗ cuối trang để phần cuối (mã QR) cuộn lên được phía trên player,
+       thay vì bị player nằm đè lên (player cao ~64px + cách đáy 16px) */
+    body.has-music-player {
+        padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+    }
+
     .music-player.expanded .music-panel {
-        width: min(190px, calc(100vw - 112px));
+        width: min(210px, calc(100vw - 112px));
     }
 }

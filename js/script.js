@@ -762,10 +762,15 @@ const MUSIC_VOLUME = 0.4;
 const MUSIC_FADE_MS = 2000;
 
 (() => {
-    if (!CONFIG.music) return;
+    // CONFIG.music là danh sách bài [{ src, title }] (vẫn nhận kiểu cũ: một đường dẫn duy nhất)
+    const tracks = Array.isArray(CONFIG.music)
+        ? CONFIG.music.filter((t) => t && t.src)
+        : CONFIG.music ? [{ src: CONFIG.music, title: CONFIG.musicTitle }] : [];
+    if (!tracks.length) return;
 
-    const audio = new Audio(CONFIG.music);
-    audio.loop = true;
+    const audio = new Audio(tracks[0].src);
+    // 1 bài thì lặp lại bài đó; nhiều bài thì hết bài tự chuyển sang bài kế (xoay vòng)
+    audio.loop = tracks.length === 1;
     audio.volume = MUSIC_VOLUME;
     audio.preload = "none";
 
@@ -778,6 +783,10 @@ const MUSIC_FADE_MS = 2000;
             <div class="music-meta">
                 <span class="music-eq" aria-hidden="true"><i></i><i></i><i></i></span>
                 <span class="music-title"></span>
+                <span class="music-skip">
+                    <button type="button" class="music-prev" aria-label="Bài trước"><i class="fa-solid fa-backward-step"></i></button>
+                    <button type="button" class="music-next" aria-label="Bài sau"><i class="fa-solid fa-forward-step"></i></button>
+                </span>
             </div>
             <input type="range" class="music-seek" min="0" max="0" step="0.1" value="0" aria-label="Tua nhạc" disabled>
             <div class="music-times"><span class="music-current">0:00</span><span class="music-duration">--:--</span></div>
@@ -786,12 +795,14 @@ const MUSIC_FADE_MS = 2000;
     toggle.setAttribute("aria-pressed", "false");
     player.appendChild(toggle);
     document.body.appendChild(player);
+    document.body.classList.add("has-music-player");
 
     const icon = toggle.querySelector("i");
     const seek = player.querySelector(".music-seek");
     const current = player.querySelector(".music-current");
     const duration = player.querySelector(".music-duration");
-    player.querySelector(".music-title").textContent = CONFIG.musicTitle || "Nhạc nền";
+    const title = player.querySelector(".music-title");
+    player.querySelector(".music-skip").hidden = tracks.length < 2;
 
     const formatTime = (seconds) => {
         if (!isFinite(seconds)) return "--:--";
@@ -929,5 +940,43 @@ const MUSIC_FADE_MS = 2000;
     seek.addEventListener("change", () => {
         audio.currentTime = Number(seek.value);
         dragging = false;
+    });
+
+    // --- Playlist ------------------------------------------------------------
+    let trackIndex = 0;
+
+    const showTrack = () => {
+        const name = tracks[trackIndex].title || "Nhạc nền";
+        title.textContent = CONFIG.musicArtist ? `${name} · ${CONFIG.musicArtist}` : name;
+        title.title = title.textContent; // tên dài bị cắt "..." thì rê chuột vẫn xem đủ
+    };
+
+    const switchTrack = (index) => {
+        const wasPlaying = !audio.paused;
+        trackIndex = (index + tracks.length) % tracks.length;
+        audio.src = tracks[trackIndex].src;
+        seek.disabled = true;
+        duration.textContent = "--:--";
+        showProgress(0);
+        showTrack();
+        if (wasPlaying) play();
+    };
+
+    showTrack();
+
+    player.querySelector(".music-prev").addEventListener("click", () => {
+        // Giống app nghe nhạc: đã nghe quá 3 giây thì "bài trước" quay về đầu bài đang nghe
+        if (audio.currentTime > 3) {
+            audio.currentTime = 0;
+            return;
+        }
+        switchTrack(trackIndex - 1);
+    });
+    player.querySelector(".music-next").addEventListener("click", () => switchTrack(trackIndex + 1));
+
+    // Hết bài thì tự sang bài kế (chỉ xảy ra khi có từ 2 bài, vì 1 bài thì audio.loop)
+    audio.addEventListener("ended", () => {
+        switchTrack(trackIndex + 1);
+        play();
     });
 })();
