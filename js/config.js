@@ -27,5 +27,39 @@ const BIO_CONFIG = {
     ],
 
     // Tên ca sĩ hiện sau tên bài, ví dụ "Nguyệt · Bunny". Để "" thì chỉ hiện tên bài.
-    musicArtist: ""
+    musicArtist: "",
+
+    // Các cách donate — mỗi mục là 1 tab trong thẻ "Buy me a carrot".
+    //   name          : tên hiện trên tab
+    //   qr            : ảnh mã QR
+    //   accountName   : tên chủ tài khoản (để "" thì ẩn)
+    //   accountNumber : số tài khoản — có thì hiện nút "Sao chép STK" (để "" thì ẩn)
+    //   link          : link mở thẳng (vd paypal.me/...) — có thì hiện nút "Mở link" (để "" thì ẩn)
+    //   color         : màu nhấn của tab (màu thương hiệu)
+    donate: [
+        {
+            name: "MB Bank",
+            qr: "images/qr-code.jpg",
+            accountName: "LE THI THANH HUONG",
+            accountNumber: "0935428662",
+            link: "",
+            color: "#2a5bd7"
+        },
+        {
+            name: "MoMo",
+            qr: "images/qr-code-2.jpg",
+            accountName: "",
+            accountNumber: "", // TODO: điền số MoMo khi có
+            link: "",
+            color: "#c2177a"
+        },
+        {
+            name: "PayPal",
+            qr: "images/qr-code-3.jpg",
+            accountName: "",
+            accountNumber: "",
+            link: "",
+            color: "#0070e0"
+        }
+    ]
 };

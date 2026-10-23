@@ -726,6 +726,11 @@ html:not(.js) #entrance-overlay {
     background: var(--glass-hover);
 }
 
+/* display:flex ở trên đè mất thuộc tính hidden (chỉ có 1 ảnh thì JS ẩn nút ‹ ›) */
+.lightbox-btn[hidden] {
+    display: none;
+}
+
 .lightbox-close { top: 16px; right: 16px; }
 .lightbox-prev  { left: 12px;  top: 50%; margin-top: -22px; }
 .lightbox-next  { right: 12px; top: 50%; margin-top: -22px; }
@@ -968,5 +973,210 @@ html:not(.js) #entrance-overlay {
 
     .music-player.expanded .music-panel {
         width: min(210px, calc(100vw - 112px));
+    }
+}
+
+/* ==========================================================================
+   THẺ DONATE (JS dựng từ BIO_CONFIG.donate, thay cho 3 ô QR xếp chồng)
+   ========================================================================== */
+.donate-card {
+    --accent: #ffffff;
+    position: relative;
+    width: min(360px, calc(100% - 24px)); /* chừa chỗ cho quầng sáng, .qr-container cắt phần tràn */
+    margin: 12px auto 0;
+    padding: 14px 14px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    /* Viền phát sáng theo màu của tab đang chọn */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent), 0 0 26px color-mix(in srgb, var(--accent) 22%, transparent);
+    transition: box-shadow 0.4s ease;
+}
+
+.donate-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 4px;
+    margin-bottom: 14px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.25);
+}
+
+.donate-tab {
+    flex: 1;
+    padding: 8px 6px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-main);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    opacity: 0.65;
+    transition: background 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease;
+}
+
+.donate-tab:hover,
+.donate-tab:focus-visible {
+    opacity: 1;
+    outline: none;
+}
+
+.donate-tab.active {
+    opacity: 1;
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* Chiều cao co giãn theo tab đang chọn (JS gán height), tab ngắn không để khoảng trống */
+.donate-viewport {
+    overflow: hidden;
+    transition: height 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.donate-track {
+    display: flex;
+    align-items: flex-start;
+    transition: transform 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.donate-slide {
+    flex: 0 0 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Mã QR luôn nằm trên nền trắng tinh cho dễ quét */
+.donate-qr {
+    width: min(240px, 68vw);
+    aspect-ratio: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    transition: transform 0.25s ease;
+}
+
+.donate-qr:hover,
+.donate-qr:focus-visible {
+    transform: scale(1.03);
+    outline: none;
+}
+
+.donate-qr img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 10px;
+}
+
+.donate-account {
+    text-align: center;
+    line-height: 1.4;
+}
+
+.donate-account-name {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    opacity: 0.8;
+}
+
+.donate-account-number {
+    font-size: 1.05rem;
+    font-weight: 900;
+    letter-spacing: 1.5px;
+    font-variant-numeric: tabular-nums;
+}
+
+.donate-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+.donate-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    color: var(--text-main);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.25s ease, transform 0.2s ease;
+}
+
+.donate-action:hover,
+.donate-action:focus-visible {
+    background: color-mix(in srgb, var(--accent) 32%, transparent);
+    outline: none;
+}
+
+.donate-action:active {
+    transform: scale(0.96);
+}
+
+/* Thông báo nhỏ "Đã sao chép ✓" */
+.donate-toast {
+    position: absolute;
+    left: 50%;
+    bottom: -14px;
+    transform: translate(-50%, 6px);
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(20, 20, 20, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.donate-toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+.donate-thanks {
+    width: 100%; /* .qr-container trên máy tính xếp hàng ngang (flex-wrap) → ép xuống dòng riêng */
+    margin-top: 22px;
+    font-size: 0.8rem;
+    opacity: 0.7;
+}
+
+/* Mở thẻ donate: cà rốt bay lên từ nút "Buy me a carrot" */
+.carrot-pop {
+    position: fixed;
+    z-index: 30;
+    font-size: 1.3rem;
+    pointer-events: none;
+    animation: carrot-pop 1.1s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes carrot-pop {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4) rotate(0deg); }
+    15%  { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1) rotate(var(--rot)); }
+}
+
+/* Thẻ cao hơn 3 ô QR cũ trên máy tính, nới giới hạn chiều cao lúc mở */
+@media (min-width: 480px) {
+    .qr-container.active {
+        max-height: 1000px;
     }
 }

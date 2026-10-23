@@ -730,9 +730,11 @@ function createIconButton(className, icon, label) {
 
 let lightbox = null;
 
-function openLightbox(photos, startIndex) {
+// options.protect = false: cho phép nhấn giữ/chuột phải để lưu ảnh (dùng cho mã QR)
+function openLightbox(photos, startIndex, options = {}) {
     if (!lightbox) lightbox = createLightbox();
     lightbox.photos = photos;
+    lightbox.protect = options.protect !== false;
     lightbox.show(startIndex);
     lightbox.el.classList.add("open");
     lightbox.lastFocus = document.activeElement;
@@ -761,7 +763,7 @@ function createLightbox() {
     el.append(img, closeBtn, prevBtn, nextBtn, counter);
     document.body.appendChild(el);
 
-    const box = { el, closeBtn, photos: [], index: 0, lastFocus: null };
+    const box = { el, closeBtn, photos: [], index: 0, lastFocus: null, protect: true };
 
     box.show = (index) => {
         const total = box.photos.length;
@@ -790,7 +792,7 @@ function createLightbox() {
     nextBtn.addEventListener("click", () => box.show(box.index + 1));
     // Bấm ra vùng tối bên ngoài ảnh cũng đóng
     el.addEventListener("click", (e) => { if (e.target === el) close(); });
-    el.addEventListener("contextmenu", (e) => e.preventDefault());
+    el.addEventListener("contextmenu", (e) => { if (box.protect) e.preventDefault(); });
 
     document.addEventListener("keydown", (e) => {
         if (!el.classList.contains("open")) return;
@@ -1146,4 +1148,220 @@ const MUSIC_FADE_MS = 2000;
         switchTrack(trackIndex + 1);
         play();
     });
+})();
+
+// 11. Thẻ donate "Buy me a carrot" — gộp các mã QR thành 1 thẻ có tab (từ CONFIG.donate).
+// Khách xem bằng điện thoại không tự quét được QR trên chính màn hình của mình, nên mỗi
+// mã có thêm nút "Sao chép STK" / "Lưu QR" / mở link, và bấm vào mã để phóng to.
+// Không có CONFIG.donate (hoặc JS lỗi) thì giữ nguyên 3 ảnh QR sẵn có trong HTML.
+(() => {
+    const methods = (CONFIG.donate || []).filter((m) => m && m.qr);
+    const qrSection = document.getElementById("qrSection");
+    if (!methods.length || !qrSection) return;
+
+    // "0935428662" → "0935 428 662" cho dễ đọc (sao chép thì vẫn là số liền)
+    const formatNumber = (n) => n.replace(/\s+/g, "").replace(/^(\d{4})(\d{3})(\d+)$/, "$1 $2 $3");
+
+    const card = document.createElement("div");
+    card.className = "donate-card";
+
+    const tabs = document.createElement("div");
+    tabs.className = "donate-tabs";
+    tabs.setAttribute("role", "tablist");
+
+    const viewport = document.createElement("div");
+    viewport.className = "donate-viewport";
+    const track = document.createElement("div");
+    track.className = "donate-track";
+    viewport.appendChild(track);
+
+    const toast = document.createElement("div");
+    toast.className = "donate-toast";
+    toast.setAttribute("role", "status");
+
+    const tabButtons = methods.map((method, i) => {
+        const tab = document.createElement("button");
+        tab.type = "button";
+        tab.className = "donate-tab";
+        tab.id = `donate-tab-${i}`;
+        tab.textContent = method.name;
+        tab.setAttribute("role", "tab");
+        tab.setAttribute("aria-controls", `donate-panel-${i}`);
+        tab.style.setProperty("--accent", method.color || "#ffffff");
+        tab.addEventListener("click", () => select(i));
+        tabs.appendChild(tab);
+
+        const slide = document.createElement("div");
+        slide.className = "donate-slide";
+        slide.id = `donate-panel-${i}`;
+        slide.setAttribute("role", "tabpanel");
+        slide.setAttribute("aria-labelledby", tab.id);
+
+        const qr = document.createElement("button");
+        qr.type = "button";
+        qr.className = "donate-qr";
+        qr.setAttribute("aria-label", `Phóng to mã QR ${method.name}`);
+        qr.innerHTML = `<img src="${method.qr}" alt="Mã QR ${method.name}" loading="lazy">`;
+        qr.addEventListener("click", () => openLightbox([method.qr], 0, { protect: false }));
+        slide.appendChild(qr);
+
+        if (method.accountName || method.accountNumber) {
+            const account = document.createElement("div");
+            account.className = "donate-account";
+            if (method.accountName) {
+                const name = document.createElement("div");
+                name.className = "donate-account-name";
+                name.textContent = method.accountName;
+                account.appendChild(name);
+            }
+            if (method.accountNumber) {
+                const number = document.createElement("div");
+                number.className = "donate-account-number";
+                number.textContent = formatNumber(method.accountNumber);
+                account.appendChild(number);
+            }
+            slide.appendChild(account);
+        }
+
+        const actions = document.createElement("div");
+        actions.className = "donate-actions";
+
+        if (method.accountNumber) {
+            const copy = document.createElement("button");
+            copy.type = "button";
+            copy.className = "donate-action";
+            copy.innerHTML = '<i class="fa-regular fa-copy"></i> Sao chép STK';
+            copy.addEventListener("click", () => copyText(method.accountNumber.replace(/\s+/g, "")));
+            actions.appendChild(copy);
+        }
+
+        // Lưu ảnh QR về máy → mở app ngân hàng → "Quét từ ảnh"
+        const save = document.createElement("a");
+        save.className = "donate-action";
+        save.href = method.qr;
+        save.download = `bunny-qr-${method.name.toLowerCase().replace(/\s+/g, "-")}${method.qr.slice(method.qr.lastIndexOf("."))}`;
+        save.innerHTML = '<i class="fa-solid fa-download"></i> Lưu QR';
+        actions.appendChild(save);
+
+        if (method.link) {
+            const open = document.createElement("a");
+            open.className = "donate-action";
+            open.href = method.link;
+            open.target = "_blank";
+            open.rel = "noopener";
+            open.innerHTML = `<i class="fa-solid fa-arrow-up-right-from-square"></i> Mở ${method.name}`;
+            actions.appendChild(open);
+        }
+
+        slide.appendChild(actions);
+        track.appendChild(slide);
+        return tab;
+    });
+
+    const thanks = document.createElement("p");
+    thanks.className = "donate-thanks";
+    thanks.textContent = "Cảm ơn bạn đã nuôi thỏ 🐰";
+
+    card.append(tabs, viewport, toast);
+    qrSection.replaceChildren(card, thanks);
+
+    // --- Chọn tab --------------------------------------------------------------
+    let current = 0;
+    function select(index) {
+        current = (index + methods.length) % methods.length;
+        track.style.transform = `translateX(${-current * 100}%)`;
+        card.style.setProperty("--accent", methods[current].color || "#ffffff");
+        tabButtons.forEach((tab, i) => {
+            const active = i === current;
+            tab.classList.toggle("active", active);
+            tab.setAttribute("aria-selected", String(active));
+            tab.tabIndex = active ? 0 : -1;
+        });
+        // Slide đang ẩn thì không cho Tab bàn phím lọt vào
+        [...track.children].forEach((slide, i) => { slide.inert = i !== current; });
+        fitHeight();
+    }
+
+    // Thẻ cao đúng bằng tab đang chọn (tab PayPal ngắn hơn tab MB vì không có STK)
+    function fitHeight() {
+        viewport.style.height = `${track.children[current].offsetHeight}px`;
+    }
+    // Ảnh QR tải xong / đổi cỡ màn hình làm slide đổi chiều cao → tính lại
+    if ("ResizeObserver" in window) {
+        const observer = new ResizeObserver(fitHeight);
+        [...track.children].forEach((slide) => observer.observe(slide));
+    }
+    select(0);
+
+    // Phím mũi tên trái/phải trên thanh tab
+    tabs.addEventListener("keydown", (e) => {
+        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+        select(current + (e.key === "ArrowRight" ? 1 : -1));
+        tabButtons[current].focus();
+    });
+
+    // Vuốt ngang trên điện thoại để đổi tab
+    let touchX = null;
+    viewport.addEventListener("touchstart", (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+    viewport.addEventListener("touchend", (e) => {
+        if (touchX === null) return;
+        const dx = e.changedTouches[0].clientX - touchX;
+        if (Math.abs(dx) > 50) select(current + (dx < 0 ? 1 : -1));
+        touchX = null;
+    });
+
+    // --- Sao chép số tài khoản ---------------------------------------------------
+    let toastTimer = null;
+    const showToast = (text) => {
+        toast.textContent = text;
+        toast.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove("show"), 1800);
+    };
+
+    function copyText(text) {
+        const fallback = () => {
+            // Trình duyệt cũ / không phải HTTPS: chép bằng ô nhập tạm
+            const input = document.createElement("textarea");
+            input.value = text;
+            input.style.position = "fixed";
+            input.style.opacity = "0";
+            document.body.appendChild(input);
+            input.select();
+            let ok = false;
+            try { ok = document.execCommand("copy"); } catch (err) { ok = false; }
+            input.remove();
+            showToast(ok ? "Đã sao chép số tài khoản ✓" : `STK: ${text}`);
+        };
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => showToast("Đã sao chép số tài khoản ✓"), fallback);
+        } else {
+            fallback();
+        }
+    }
+
+    // --- Mở thẻ: vài củ cà rốt bay lên từ nút donate ----------------------------
+    const donateBtn = document.getElementById("btn-donate");
+    if (donateBtn && !prefersReducedMotion) {
+        donateBtn.addEventListener("click", () => {
+            // Đợi nút toggle (gắn ở DOMContentLoaded) đổi trạng thái xong rồi mới xét
+            setTimeout(() => {
+                if (!qrSection.classList.contains("active")) return;
+                const rect = donateBtn.getBoundingClientRect();
+                for (let i = 0; i < 7; i++) {
+                    const carrot = document.createElement("span");
+                    carrot.className = "carrot-pop";
+                    carrot.textContent = "🥕";
+                    carrot.style.left = `${rect.left + rect.width * (0.2 + Math.random() * 0.6)}px`;
+                    carrot.style.top = `${rect.top + rect.height / 2}px`;
+                    carrot.style.setProperty("--dx", `${(Math.random() - 0.5) * 120}px`);
+                    carrot.style.setProperty("--dy", `${-90 - Math.random() * 90}px`);
+                    carrot.style.setProperty("--rot", `${(Math.random() - 0.5) * 140}deg`);
+                    carrot.style.animationDelay = `${i * 45}ms`;
+                    carrot.addEventListener("animationend", () => carrot.remove());
+                    document.body.appendChild(carrot);
+                }
+            }, 0);
+        });
+    }
 })();
