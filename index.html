@@ -55,6 +55,17 @@
             if (active) document.documentElement.classList.add(active);
         })();
 
+        // Vercel Web Analytics — bật trong Vercel Dashboard → Project → Analytics → Enable.
+        // Chỉ nạp khi chạy trên Vercel (localhost / mở file trực tiếp không có file này).
+        // window.va gom các sự kiện gửi trước khi script kịp tải xong.
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+        if (location.protocol.indexOf("http") === 0 && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) {
+            var analytics = document.createElement("script");
+            analytics.defer = true;
+            analytics.src = "/_vercel/insights/script.js";
+            document.head.appendChild(analytics);
+        }
+
         setTimeout(function () {
             if (window.__bioEntranceStarted) return;
             var logo = document.querySelector(".entrance-logo");
@@ -70,7 +81,10 @@
 
     <!-- Các thư viện bên ngoài (External Libraries) -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;900&family=Qwitcher+Grypen:wght@700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <!-- integrity: trình duyệt chỉ chạy file nếu nội dung khớp mã băm này — CDN có bị
+         chèn mã độc thì file bị chặn. Đổi phiên bản thư viện thì phải tính lại mã băm. -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+          integrity="sha384-PPIZEGYM1v8zp5Py7UjFb79S58UeqCL9pYVnVPURKEqvioPROaVAJKKLzvH2rDnI" crossorigin="anonymous" referrerpolicy="no-referrer">
     <link rel="icon" type="image/jpeg" href="images/Avatar.jpg">
     
     <!-- Link tới file giao diện của bạn -->
@@ -139,7 +153,7 @@
             </a> -->
             
             <button id="btn-donate" class="link-btn" style="width: 100%;">
-                <i class="fa-solid fa-carrot"></i> Buy me a carrot 🐰
+                <i class="fa-solid fa-carrot"></i> <span class="donate-label">Buy me a carrot 🐰</span>
             </button>
         </div>
 
@@ -163,14 +177,17 @@
         </div>
     </div>
 
+    <!-- Phải nằm trước script.js: script gắn sự kiện "chạm vào thỏ" ngay khi chạy -->
+    <div class="bunny-runner"></div>
+
     <!-- CÁC THƯ VIỆN HIỆU ỨNG JS -->
     <!-- script.js chạy trước để màn loading không phải chờ CDN; hai thư viện hiệu ứng
          tải "defer" và được khởi tạo trong DOMContentLoaded. -->
     <script src="js/config.js"></script>
     <script src="js/script.js"></script>
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.1/vanilla-tilt.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-
-    <div class="bunny-runner"></div>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.1/vanilla-tilt.min.js"
+            integrity="sha384-0k1dj5tm+KUH/4vkNk/i90XsjDA8Ltmt+ybcrFoH4t0dgv/WZsPpVBnkhcroX8UL" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"
+            integrity="sha384-qzrow8+R9k2/XKVt7fpdI3hp6ocDhtrCzBsdbcw7/VRkwEXYcsTTAEeFvhlgiGBW" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </body>
 </html>

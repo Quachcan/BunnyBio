@@ -26,6 +26,131 @@ const isTet = document.documentElement.classList.contains("tet");
 // Nội dung tuỳ chỉnh từ js/config.js (ảnh avatar, gallery, nhạc). Thiếu file thì coi như trống.
 const CONFIG = typeof BIO_CONFIG !== "undefined" ? BIO_CONFIG : {};
 
+// Ghi một sự kiện vào Vercel Web Analytics (window.va được tạo trong <head>).
+// Lưu ý: theo bảng giá Vercel, sự kiện tuỳ chỉnh chỉ được ghi ở gói Pro trở lên;
+// gói Hobby (miễn phí) vẫn đếm lượt xem trang, còn các lệnh này chỉ đơn giản là bị bỏ qua.
+function track(name, data) {
+    if (typeof window.va === "function") window.va("event", { name, data });
+}
+
+// --- Song ngữ Việt / Anh -------------------------------------------------------
+// Chữ nào hiện cho khách thì lấy từ đây. {name}, {n} được thay bằng giá trị truyền vào.
+const I18N = {
+    vi: {
+        "donate.default": "Tặng thỏ củ cà rốt 🐰",
+        "donate.halloween": "Cho kẹo hay cà rốt? 🎃🐰",
+        "donate.christmas": "Tặng thỏ quà Noel 🎁🐰",
+        "donate.tet": "Lì xì cho thỏ 🧧🐰",
+        "donate.zoom": "Phóng to mã QR {name}",
+        "donate.qrAlt": "Mã QR {name}",
+        "donate.copy": "Sao chép STK",
+        "donate.save": "Lưu QR",
+        "donate.open": "Mở {name}",
+        "donate.thanks": "Cảm ơn bạn đã nuôi thỏ 🐰",
+        "donate.copied": "Đã sao chép số tài khoản ✓",
+        "donate.copyFallback": "STK: {n}",
+        "tet.greeting": "Chúc Mừng Năm Mới",
+        "hint.tap": "chạm để vào 🎧",
+        "gallery.label": "Ảnh nổi bật",
+        "gallery.view": "Xem ảnh {n}",
+        "photo.prev": "Ảnh trước",
+        "photo.next": "Ảnh sau",
+        "lightbox.label": "Xem ảnh",
+        "lightbox.close": "Đóng",
+        "avatar.switch": "Đổi ảnh đại diện",
+        "music.region": "Trình phát nhạc",
+        "music.start": "Bật nhạc nền",
+        "music.play": "Phát nhạc nền",
+        "music.pause": "Tạm dừng nhạc nền",
+        "music.seek": "Tua nhạc",
+        "music.prev": "Bài trước",
+        "music.next": "Bài sau",
+        "music.fallbackTitle": "Nhạc nền",
+        "bunny.label": "Chú thỏ — chạm thử xem",
+        "bunny.nom": "măm măm 🥕",
+        "lang.switch": "Đổi ngôn ngữ"
+    },
+    en: {
+        "donate.default": "Buy me a carrot 🐰",
+        "donate.halloween": "Trick or carrot? 🎃🐰",
+        "donate.christmas": "Gift me a carrot 🎁🐰",
+        "donate.tet": "Lucky money for bunny 🧧🐰",
+        "donate.zoom": "Enlarge {name} QR code",
+        "donate.qrAlt": "{name} QR code",
+        "donate.copy": "Copy account no.",
+        "donate.save": "Save QR",
+        "donate.open": "Open {name}",
+        "donate.thanks": "Thanks for feeding the bunny 🐰",
+        "donate.copied": "Account number copied ✓",
+        "donate.copyFallback": "Account: {n}",
+        "tet.greeting": "Happy Lunar New Year",
+        "hint.tap": "tap to enter 🎧",
+        "gallery.label": "Featured photos",
+        "gallery.view": "View photo {n}",
+        "photo.prev": "Previous photo",
+        "photo.next": "Next photo",
+        "lightbox.label": "Photo viewer",
+        "lightbox.close": "Close",
+        "avatar.switch": "Change profile photo",
+        "music.region": "Music player",
+        "music.start": "Play background music",
+        "music.play": "Play music",
+        "music.pause": "Pause music",
+        "music.seek": "Seek",
+        "music.prev": "Previous song",
+        "music.next": "Next song",
+        "music.fallbackTitle": "Background music",
+        "bunny.label": "Bunny — give it a tap",
+        "bunny.nom": "nom nom 🥕",
+        "lang.switch": "Switch language"
+    }
+};
+
+// Lần trước khách đã chọn thì giữ; chưa chọn thì theo ngôn ngữ trình duyệt (tiếng Việt → vi, còn lại → en)
+let lang = (() => {
+    try {
+        const saved = localStorage.getItem("bio-lang");
+        if (saved && I18N[saved]) return saved;
+    } catch (err) { /* chế độ ẩn danh / chặn lưu trữ: bỏ qua */ }
+    return (navigator.language || "").toLowerCase().startsWith("vi") ? "vi" : "en";
+})();
+document.documentElement.lang = lang;
+
+function t(key, vars = {}) {
+    const text = (I18N[lang] && I18N[lang][key]) || I18N.vi[key] || key;
+    return text.replace(/\{(\w+)\}/g, (_, name) => (name in vars ? vars[name] : ""));
+}
+
+// Gắn khoá dịch cho phần tử rồi ghi chữ vào. where: "text" (mặc định), "aria" hoặc "alt".
+// Đổi ngôn ngữ thì applyLanguage() đọc lại các khoá này để cập nhật cả trang.
+function i18n(el, key, vars, where = "text") {
+    if (!el) return;
+    el.dataset[`i18n${where === "text" ? "" : where[0].toUpperCase() + where.slice(1)}`] = key;
+    if (vars) el.dataset.i18nVars = JSON.stringify(vars);
+    const value = t(key, vars);
+    if (where === "aria") el.setAttribute("aria-label", value);
+    else if (where === "alt") el.alt = value;
+    else el.textContent = value;
+}
+
+function applyLanguage() {
+    document.documentElement.lang = lang;
+    const vars = (el) => (el.dataset.i18nVars ? JSON.parse(el.dataset.i18nVars) : {});
+    document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n, vars(el)); });
+    document.querySelectorAll("[data-i18n-aria]").forEach((el) => { el.setAttribute("aria-label", t(el.dataset.i18nAria, vars(el))); });
+    document.querySelectorAll("[data-i18n-alt]").forEach((el) => { el.alt = t(el.dataset.i18nAlt, vars(el)); });
+}
+
+// Chữ nút donate (mặc định hoặc theo theme) nằm trong <span> riêng để giữ icon bên cạnh
+function setDonateLabel(icon, key) {
+    const btn = document.getElementById("btn-donate");
+    if (!btn) return;
+    const iconEl = btn.querySelector("i");
+    if (iconEl) iconEl.className = `fa-solid ${icon}`;
+    i18n(btn.querySelector(".donate-label"), key);
+}
+setDonateLabel("fa-carrot", "donate.default");
+
 // Dựng gallery ngay từ đầu để nó có mặt trong chuỗi hiện dần (runEntranceSequence),
 // kể cả khi màn loading bị bỏ qua ngay lập tức (giảm chuyển động).
 buildGallery();
@@ -415,8 +540,7 @@ function applyHalloweenText() {
     const kaomoji = document.querySelector(".kaomoji");
     if (kaomoji) kaomoji.textContent = "👻 ε ⋒ x ⋒ 3 🎃";
 
-    const donateBtn = document.getElementById("btn-donate");
-    if (donateBtn) donateBtn.innerHTML = '<i class="fa-solid fa-carrot"></i> Trick or carrot? 🎃🐰';
+    setDonateLabel("fa-carrot", "donate.halloween");
 }
 
 function spawnHalloweenCritters() {
@@ -459,8 +583,7 @@ function applyChristmasText() {
     const kaomoji = document.querySelector(".kaomoji");
     if (kaomoji) kaomoji.textContent = "🎄 ε ⋒ x ⋒ 3 ❄️";
 
-    const donateBtn = document.getElementById("btn-donate");
-    if (donateBtn) donateBtn.innerHTML = '<i class="fa-solid fa-gift"></i> Gift me a carrot 🎁🐰';
+    setDonateLabel("fa-gift", "donate.christmas");
 }
 
 function spawnChristmasScenery() {
@@ -499,15 +622,14 @@ function applyTetText() {
     if (subtitle) {
         const greeting = document.createElement("div");
         greeting.className = "tet-greeting";
-        greeting.textContent = "Chúc Mừng Năm Mới";
+        i18n(greeting, "tet.greeting");
         subtitle.after(greeting);
     }
 
     const kaomoji = document.querySelector(".kaomoji");
     if (kaomoji) kaomoji.textContent = "🧧 ε ⋒ x ⋒ 3 🌸";
 
-    const donateBtn = document.getElementById("btn-donate");
-    if (donateBtn) donateBtn.innerHTML = '<i class="fa-solid fa-envelope"></i> Lì xì cho thỏ 🧧🐰';
+    setDonateLabel("fa-envelope", "donate.tet");
 }
 
 function spawnTetScenery() {
@@ -659,7 +781,7 @@ function buildGallery() {
 
     const gallery = document.createElement("section");
     gallery.className = "gallery";
-    gallery.setAttribute("aria-label", "Ảnh nổi bật");
+    i18n(gallery, "gallery.label", null, "aria");
 
     const track = document.createElement("div");
     track.className = "gallery-track";
@@ -668,7 +790,7 @@ function buildGallery() {
         const item = document.createElement("button");
         item.type = "button";
         item.className = "gallery-item";
-        item.setAttribute("aria-label", `Xem ảnh ${index + 1}`);
+        i18n(item, "gallery.view", { n: index + 1 }, "aria");
 
         const img = document.createElement("img");
         img.src = src;
@@ -682,8 +804,8 @@ function buildGallery() {
         track.appendChild(item);
     });
 
-    const prev = createIconButton("gallery-nav gallery-prev", "fa-chevron-left", "Ảnh trước");
-    const next = createIconButton("gallery-nav gallery-next", "fa-chevron-right", "Ảnh sau");
+    const prev = createIconButton("gallery-nav gallery-prev", "fa-chevron-left", "photo.prev");
+    const next = createIconButton("gallery-nav gallery-next", "fa-chevron-right", "photo.next");
     const step = () => track.clientWidth * 0.8;
     prev.addEventListener("click", () => track.scrollBy({ left: -step() }));
     next.addEventListener("click", () => track.scrollBy({ left: step() }));
@@ -719,11 +841,12 @@ function buildGallery() {
     gallery.addEventListener("contextmenu", (e) => e.preventDefault());
 }
 
-function createIconButton(className, icon, label) {
+// labelKey: khoá trong I18N (nút chỉ có biểu tượng nên cần aria-label cho trình đọc màn hình)
+function createIconButton(className, icon, labelKey) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = className;
-    button.setAttribute("aria-label", label);
+    i18n(button, labelKey, null, "aria");
     button.innerHTML = `<i class="fa-solid ${icon}"></i>`;
     return button;
 }
@@ -747,16 +870,16 @@ function createLightbox() {
     el.className = "lightbox";
     el.setAttribute("role", "dialog");
     el.setAttribute("aria-modal", "true");
-    el.setAttribute("aria-label", "Xem ảnh");
+    i18n(el, "lightbox.label", null, "aria");
 
     const img = document.createElement("img");
     img.className = "lightbox-img";
     img.alt = "";
     img.draggable = false;
 
-    const closeBtn = createIconButton("lightbox-btn lightbox-close", "fa-xmark", "Đóng");
-    const prevBtn = createIconButton("lightbox-btn lightbox-prev", "fa-chevron-left", "Ảnh trước");
-    const nextBtn = createIconButton("lightbox-btn lightbox-next", "fa-chevron-right", "Ảnh sau");
+    const closeBtn = createIconButton("lightbox-btn lightbox-close", "fa-xmark", "lightbox.close");
+    const prevBtn = createIconButton("lightbox-btn lightbox-prev", "fa-chevron-left", "photo.prev");
+    const nextBtn = createIconButton("lightbox-btn lightbox-next", "fa-chevron-right", "photo.next");
     const counter = document.createElement("div");
     counter.className = "lightbox-counter";
 
@@ -863,7 +986,7 @@ function initAvatarRotation() {
     wrapper.classList.add("has-photos");
     wrapper.setAttribute("role", "button");
     wrapper.setAttribute("tabindex", "0");
-    wrapper.setAttribute("aria-label", "Đổi ảnh đại diện");
+    i18n(wrapper, "avatar.switch", null, "aria");
 
     wrapper.addEventListener("click", () => show(index + 1));
     wrapper.addEventListener("keydown", (e) => {
@@ -924,21 +1047,22 @@ const MUSIC_FADE_MS = 2000;
     const player = document.createElement("div");
     player.className = "music-player";
     player.setAttribute("role", "region");
-    player.setAttribute("aria-label", "Trình phát nhạc");
+    i18n(player, "music.region", null, "aria");
     player.innerHTML = `
         <div class="music-panel">
             <div class="music-meta">
                 <span class="music-eq" aria-hidden="true"><i></i><i></i><i></i></span>
                 <span class="music-title"></span>
                 <span class="music-skip">
-                    <button type="button" class="music-prev" aria-label="Bài trước"><i class="fa-solid fa-backward-step"></i></button>
-                    <button type="button" class="music-next" aria-label="Bài sau"><i class="fa-solid fa-forward-step"></i></button>
+                    <button type="button" class="music-prev" data-i18n-aria="music.prev" aria-label="Bài trước"><i class="fa-solid fa-backward-step"></i></button>
+                    <button type="button" class="music-next" data-i18n-aria="music.next" aria-label="Bài sau"><i class="fa-solid fa-forward-step"></i></button>
                 </span>
             </div>
-            <input type="range" class="music-seek" min="0" max="0" step="0.1" value="0" aria-label="Tua nhạc" disabled>
+            <input type="range" class="music-seek" min="0" max="0" step="0.1" value="0" data-i18n-aria="music.seek" aria-label="Tua nhạc" disabled>
             <div class="music-times"><span class="music-current">0:00</span><span class="music-duration">--:--</span></div>
         </div>`;
-    const toggle = createIconButton("music-toggle", "fa-music", "Bật nhạc nền");
+    const toggle = createIconButton("music-toggle", "fa-music", "music.start");
+    toggle.dataset.track = "Music button";
     toggle.setAttribute("aria-pressed", "false");
     player.appendChild(toggle);
     document.body.appendChild(player);
@@ -997,7 +1121,7 @@ const MUSIC_FADE_MS = 2000;
         player.classList.toggle("playing", playing);
         icon.className = `fa-solid ${playing ? "fa-pause" : started ? "fa-play" : "fa-music"}`;
         toggle.setAttribute("aria-pressed", String(playing));
-        toggle.setAttribute("aria-label", playing ? "Tạm dừng nhạc nền" : "Phát nhạc nền");
+        i18n(toggle, playing ? "music.pause" : "music.play", null, "aria");
         if (playing) expand();
         else collapseLater(MUSIC_COLLAPSE_MS);
     };
@@ -1084,7 +1208,7 @@ const MUSIC_FADE_MS = 2000;
         if (overlay && !overlay.classList.contains("hidden")) {
             const hint = document.createElement("div");
             hint.className = "entrance-hint";
-            hint.textContent = "chạm để vào 🎧";
+            i18n(hint, "hint.tap");
             overlay.appendChild(hint);
         }
     });
@@ -1115,8 +1239,13 @@ const MUSIC_FADE_MS = 2000;
     let trackIndex = 0;
 
     const showTrack = () => {
-        const name = tracks[trackIndex].title || "Nhạc nền";
-        title.textContent = CONFIG.musicArtist ? `${name} · ${CONFIG.musicArtist}` : name;
+        const name = tracks[trackIndex].title;
+        if (name) {
+            delete title.dataset.i18n; // tên bài thật thì không dịch
+            title.textContent = CONFIG.musicArtist ? `${name} · ${CONFIG.musicArtist}` : name;
+        } else {
+            i18n(title, "music.fallbackTitle");
+        }
         title.title = title.textContent; // tên dài bị cắt "..." thì rê chuột vẫn xem đủ
     };
 
@@ -1200,8 +1329,10 @@ const MUSIC_FADE_MS = 2000;
         const qr = document.createElement("button");
         qr.type = "button";
         qr.className = "donate-qr";
-        qr.setAttribute("aria-label", `Phóng to mã QR ${method.name}`);
-        qr.innerHTML = `<img src="${method.qr}" alt="Mã QR ${method.name}" loading="lazy">`;
+        Object.assign(qr.dataset, { track: "Donate QR zoom", trackMethod: method.name });
+        i18n(qr, "donate.zoom", { name: method.name }, "aria");
+        qr.innerHTML = `<img src="${method.qr}" loading="lazy">`;
+        i18n(qr.querySelector("img"), "donate.qrAlt", { name: method.name }, "alt");
         qr.addEventListener("click", () => openLightbox([method.qr], 0, { protect: false }));
         slide.appendChild(qr);
 
@@ -1230,7 +1361,9 @@ const MUSIC_FADE_MS = 2000;
             const copy = document.createElement("button");
             copy.type = "button";
             copy.className = "donate-action";
-            copy.innerHTML = '<i class="fa-regular fa-copy"></i> Sao chép STK';
+            Object.assign(copy.dataset, { track: "Donate copy account", trackMethod: method.name });
+            copy.innerHTML = '<i class="fa-regular fa-copy"></i> <span></span>';
+            i18n(copy.querySelector("span"), "donate.copy");
             copy.addEventListener("click", () => copyText(method.accountNumber.replace(/\s+/g, "")));
             actions.appendChild(copy);
         }
@@ -1238,18 +1371,22 @@ const MUSIC_FADE_MS = 2000;
         // Lưu ảnh QR về máy → mở app ngân hàng → "Quét từ ảnh"
         const save = document.createElement("a");
         save.className = "donate-action";
+        Object.assign(save.dataset, { track: "Donate save QR", trackMethod: method.name });
         save.href = method.qr;
         save.download = `bunny-qr-${method.name.toLowerCase().replace(/\s+/g, "-")}${method.qr.slice(method.qr.lastIndexOf("."))}`;
-        save.innerHTML = '<i class="fa-solid fa-download"></i> Lưu QR';
+        save.innerHTML = '<i class="fa-solid fa-download"></i> <span></span>';
+        i18n(save.querySelector("span"), "donate.save");
         actions.appendChild(save);
 
         if (method.link) {
             const open = document.createElement("a");
             open.className = "donate-action";
+            Object.assign(open.dataset, { track: "Donate open link", trackMethod: method.name });
             open.href = method.link;
             open.target = "_blank";
             open.rel = "noopener";
-            open.innerHTML = `<i class="fa-solid fa-arrow-up-right-from-square"></i> Mở ${method.name}`;
+            open.innerHTML = `<i class="fa-solid fa-arrow-up-right-from-square"></i> <span></span>`;
+            i18n(open.querySelector("span"), "donate.open", { name: method.name });
             actions.appendChild(open);
         }
 
@@ -1260,7 +1397,7 @@ const MUSIC_FADE_MS = 2000;
 
     const thanks = document.createElement("p");
     thanks.className = "donate-thanks";
-    thanks.textContent = "Cảm ơn bạn đã nuôi thỏ 🐰";
+    i18n(thanks, "donate.thanks");
 
     card.append(tabs, viewport, toast);
     qrSection.replaceChildren(card, thanks);
@@ -1331,10 +1468,10 @@ const MUSIC_FADE_MS = 2000;
             let ok = false;
             try { ok = document.execCommand("copy"); } catch (err) { ok = false; }
             input.remove();
-            showToast(ok ? "Đã sao chép số tài khoản ✓" : `STK: ${text}`);
+            showToast(ok ? t("donate.copied") : t("donate.copyFallback", { n: text }));
         };
         if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(text).then(() => showToast("Đã sao chép số tài khoản ✓"), fallback);
+            navigator.clipboard.writeText(text).then(() => showToast(t("donate.copied")), fallback);
         } else {
             fallback();
         }
@@ -1365,3 +1502,116 @@ const MUSIC_FADE_MS = 2000;
         });
     }
 })();
+
+// 12. Con thỏ tương tác — chạm vào thì thỏ nhảy lên, thả tim; cứ 5 lần chạm thì được "măm" cà rốt
+(() => {
+    const bunny = document.querySelector(".bunny-runner");
+    if (!bunny) return;
+    i18n(bunny, "bunny.label", null, "aria");
+    bunny.setAttribute("role", "button");
+
+    // Thả vài emoji bay lên từ đỉnh đầu thỏ (dùng chung hiệu ứng .carrot-pop)
+    const pop = (emoji, count, rect) => {
+        for (let i = 0; i < count; i++) {
+            const el = document.createElement("span");
+            el.className = "carrot-pop";
+            el.textContent = emoji;
+            el.style.left = `${rect.left + rect.width / 2}px`;
+            el.style.top = `${rect.top + rect.height * 0.25}px`;
+            el.style.setProperty("--dx", `${(Math.random() - 0.5) * 70}px`);
+            el.style.setProperty("--dy", `${-60 - Math.random() * 50}px`);
+            el.style.setProperty("--rot", `${(Math.random() - 0.5) * 60}deg`);
+            el.style.animationDelay = `${i * 70}ms`;
+            el.addEventListener("animationend", () => el.remove());
+            document.body.appendChild(el);
+        }
+    };
+
+    // Bong bóng thoại nhỏ phía trên thỏ
+    const say = (text, rect) => {
+        const bubble = document.createElement("div");
+        bubble.className = "bunny-bubble";
+        bubble.textContent = text;
+        bubble.style.left = `${rect.left + rect.width / 2}px`;
+        bubble.style.top = `${rect.top + rect.height * 0.15}px`;
+        bubble.addEventListener("animationend", () => bubble.remove());
+        document.body.appendChild(bubble);
+    };
+
+    let taps = 0;
+    bunny.addEventListener("click", () => {
+        taps++;
+        const rect = bunny.getBoundingClientRect();
+
+        // Nhảy bằng thuộc tính "translate" riêng, không đụng "transform" mà CSS đang dùng
+        // để lật thỏ khi chạy ngược chiều
+        if (!prefersReducedMotion && typeof bunny.animate === "function") {
+            bunny.animate(
+                [{ translate: "0 0" }, { translate: "0 -70px" }, { translate: "0 0" }],
+                { duration: 600, easing: "cubic-bezier(0.3, 0.7, 0.4, 1)" }
+            );
+        }
+
+        pop("💕", 3, rect);
+        if (taps % 5 === 0) {
+            pop("🥕", 1, rect);
+            say(t("bunny.nom"), rect);
+        }
+    });
+})();
+
+// 13. Nút đổi ngôn ngữ VI / EN (góc trên bên trái). Lựa chọn được nhớ cho lần sau.
+(() => {
+    const switcher = document.createElement("div");
+    switcher.className = "lang-switch";
+    switcher.setAttribute("role", "group");
+    i18n(switcher, "lang.switch", null, "aria");
+
+    const buttons = ["vi", "en"].map((code) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = code.toUpperCase();
+        button.lang = code;
+        button.addEventListener("click", () => setLanguage(code));
+        switcher.appendChild(button);
+        return button;
+    });
+
+    const markActive = () => buttons.forEach((b) => {
+        const active = b.lang === lang;
+        b.classList.toggle("active", active);
+        b.setAttribute("aria-pressed", String(active));
+    });
+
+    function setLanguage(code) {
+        if (code === lang) return;
+        lang = code;
+        try { localStorage.setItem("bio-lang", code); } catch (err) { /* không lưu được thì thôi */ }
+        applyLanguage();
+        markActive();
+        track("Language switch", { lang: code });
+    }
+
+    markActive();
+    document.body.appendChild(switcher);
+})();
+
+// 14. Thống kê lượt bấm — link nào được bấm nhiều nhất, có ai mở donate / sao chép STK...
+// (Gửi tới Vercel Web Analytics qua track(); xem lưu ý về gói Pro ở hàm track.)
+document.addEventListener("click", (e) => {
+    const link = e.target.closest(".links-container a.link-btn");
+    if (link) {
+        track("Link click", { link: new URL(link.href).hostname.replace(/^www\./, "") });
+        return;
+    }
+    if (e.target.closest("#btn-donate")) {
+        track("Donate toggle");
+        return;
+    }
+    const tagged = e.target.closest("[data-track]");
+    if (tagged) track(tagged.dataset.track, tagged.dataset.trackMethod ? { method: tagged.dataset.trackMethod } : undefined);
+});
+
+// Mọi phần tử đã dựng xong → dịch một lượt theo ngôn ngữ đang chọn
+// (gồm cả các aria-label viết sẵn trong HTML của trình phát nhạc)
+applyLanguage();

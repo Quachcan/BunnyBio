@@ -34,7 +34,8 @@ html.halloween button,
 html.halloween .link-btn,
 html.halloween #btn-donate,
 html.halloween .avatar-wrapper.has-photos,
-html.halloween .music-seek {
+html.halloween .music-seek,
+html.halloween .bunny-runner {
     cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3E%3Cg transform='translate(0 3)'%3E%3Cpath d='M5.2 6.3L6 2.6L6.8 6.3zM12.2 1.8L13 -1.9L13.8 1.8zM19.2 1.8L20 -1.9L20.8 1.8zM25.2 7.3L26 3.6L26.8 7.3z' fill='%23f5e9ff' stroke='%232b1400' stroke-width='0.6'/%3E%3Cg fill='%23b48cff' stroke='%232b1400' stroke-width='1'%3E%3Cellipse cx='15' cy='19' rx='8' ry='6.5'/%3E%3Cellipse cx='6' cy='10' rx='3' ry='4'/%3E%3Cellipse cx='13' cy='5.5' rx='3' ry='4'/%3E%3Cellipse cx='20' cy='5.5' rx='3' ry='4'/%3E%3Cellipse cx='26' cy='11' rx='3' ry='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") 6 6, pointer;
 }
 
