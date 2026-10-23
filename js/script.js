@@ -23,6 +23,13 @@ const isHalloween = document.documentElement.classList.contains("halloween");
 const isChristmas = document.documentElement.classList.contains("christmas");
 const isTet = document.documentElement.classList.contains("tet");
 
+// Nội dung tuỳ chỉnh từ js/config.js (ảnh avatar, gallery, nhạc). Thiếu file thì coi như trống.
+const CONFIG = typeof BIO_CONFIG !== "undefined" ? BIO_CONFIG : {};
+
+// Dựng gallery ngay từ đầu để nó có mặt trong chuỗi hiện dần (runEntranceSequence),
+// kể cả khi màn loading bị bỏ qua ngay lập tức (giảm chuyển động).
+buildGallery();
+
 let holeTrackingRAF = null;
 
 // Tells the failsafe timer in <head> that the entrance is running, so it
@@ -79,7 +86,9 @@ function skipEntrance(overlay, entranceLogo) {
         avatarWrapper.appendChild(entranceLogo);
     }
     overlay.classList.add("hidden");
-    runEntranceSequence();
+    // Đợi phần còn lại của file chạy xong (chèn lời chúc Tết, v.v.) rồi mới cho hiện dần,
+    // vì đường giảm chuyển động gọi tới đây ngay khi file vừa bắt đầu chạy.
+    setTimeout(runEntranceSequence, 0);
 }
 
 /**
@@ -221,6 +230,8 @@ function runEntranceSequence() {
         document.querySelector(".title"),
         document.querySelector(".subtitle"),
         document.querySelector(".tet-greeting"), // chỉ có khi bật theme Tết
+        document.querySelector(".tagline"),
+        document.querySelector(".gallery"),
         document.querySelector(".talks-text"),
         ...document.querySelectorAll(".link-btn"),
         document.querySelector(".donate-wrapper")
@@ -232,6 +243,9 @@ function runEntranceSequence() {
             el.classList.add("fade-in");
         }, index * 100);
     });
+
+    // Avatar đã nằm đúng chỗ trong .avatar-wrapper → giờ mới bật đổi ảnh luân phiên
+    initAvatarRotation();
 }
 
 // 1. Hàm bật tắt QR Code
@@ -491,3 +505,281 @@ function initParticles() {
 
     particlesJS("particles-js", config);
 }
+
+// 7. Gallery ảnh nổi bật — dựng từ CONFIG.galleryPhotos, bấm ảnh để xem lớn
+function buildGallery() {
+    const photos = CONFIG.galleryPhotos || [];
+    const anchor = document.querySelector(".talks-text");
+    if (!photos.length || !anchor) return;
+
+    const gallery = document.createElement("section");
+    gallery.className = "gallery";
+    gallery.setAttribute("aria-label", "Ảnh nổi bật");
+
+    const track = document.createElement("div");
+    track.className = "gallery-track";
+
+    photos.forEach((src, index) => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "gallery-item";
+        item.setAttribute("aria-label", `Xem ảnh ${index + 1}`);
+
+        const img = document.createElement("img");
+        img.src = src;
+        img.alt = "";
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.draggable = false;
+
+        item.appendChild(img);
+        item.addEventListener("click", () => openLightbox(photos, index));
+        track.appendChild(item);
+    });
+
+    const prev = createIconButton("gallery-nav gallery-prev", "fa-chevron-left", "Ảnh trước");
+    const next = createIconButton("gallery-nav gallery-next", "fa-chevron-right", "Ảnh sau");
+    const step = () => track.clientWidth * 0.8;
+    prev.addEventListener("click", () => track.scrollBy({ left: -step() }));
+    next.addEventListener("click", () => track.scrollBy({ left: step() }));
+
+    // Ẩn nút trái/phải khi đã cuộn tới đầu/cuối dải ảnh
+    const updateNav = () => {
+        prev.disabled = track.scrollLeft <= 2;
+        next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 2;
+    };
+    track.addEventListener("scroll", updateNav, { passive: true });
+    window.addEventListener("resize", updateNav);
+    requestAnimationFrame(updateNav);
+
+    gallery.append(track, prev, next);
+    anchor.before(gallery);
+
+    // Ảnh hiện dần (mờ → rõ) khi cuộn tới
+    const items = track.querySelectorAll(".gallery-item");
+    if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+                entry.target.classList.add("is-visible");
+                observer.unobserve(entry.target);
+            });
+        }, { root: track, rootMargin: "0px 60px", threshold: 0.2 });
+        items.forEach((item) => observer.observe(item));
+    } else {
+        items.forEach((item) => item.classList.add("is-visible"));
+    }
+
+    // Cản bớt việc chuột phải → "Lưu ảnh" (chỉ là rào nhẹ, watermark mới là cách chắc chắn)
+    gallery.addEventListener("contextmenu", (e) => e.preventDefault());
+}
+
+function createIconButton(className, icon, label) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = className;
+    button.setAttribute("aria-label", label);
+    button.innerHTML = `<i class="fa-solid ${icon}"></i>`;
+    return button;
+}
+
+let lightbox = null;
+
+function openLightbox(photos, startIndex) {
+    if (!lightbox) lightbox = createLightbox();
+    lightbox.photos = photos;
+    lightbox.show(startIndex);
+    lightbox.el.classList.add("open");
+    lightbox.lastFocus = document.activeElement;
+    document.body.style.overflow = "hidden";
+    lightbox.closeBtn.focus();
+}
+
+function createLightbox() {
+    const el = document.createElement("div");
+    el.className = "lightbox";
+    el.setAttribute("role", "dialog");
+    el.setAttribute("aria-modal", "true");
+    el.setAttribute("aria-label", "Xem ảnh");
+
+    const img = document.createElement("img");
+    img.className = "lightbox-img";
+    img.alt = "";
+    img.draggable = false;
+
+    const closeBtn = createIconButton("lightbox-btn lightbox-close", "fa-xmark", "Đóng");
+    const prevBtn = createIconButton("lightbox-btn lightbox-prev", "fa-chevron-left", "Ảnh trước");
+    const nextBtn = createIconButton("lightbox-btn lightbox-next", "fa-chevron-right", "Ảnh sau");
+    const counter = document.createElement("div");
+    counter.className = "lightbox-counter";
+
+    el.append(img, closeBtn, prevBtn, nextBtn, counter);
+    document.body.appendChild(el);
+
+    const box = { el, closeBtn, photos: [], index: 0, lastFocus: null };
+
+    box.show = (index) => {
+        const total = box.photos.length;
+        box.index = (index + total) % total;
+        img.classList.add("switching");
+        // Đổi ảnh khi ảnh cũ đã mờ đi, tránh giật
+        setTimeout(() => {
+            img.onload = () => img.classList.remove("switching");
+            img.src = box.photos[box.index];
+            if (img.complete) img.classList.remove("switching");
+        }, el.classList.contains("open") ? 150 : 0);
+        counter.textContent = `${box.index + 1} / ${total}`;
+        const single = total < 2;
+        prevBtn.hidden = single;
+        nextBtn.hidden = single;
+    };
+
+    const close = () => {
+        el.classList.remove("open");
+        document.body.style.overflow = "";
+        if (box.lastFocus) box.lastFocus.focus();
+    };
+
+    closeBtn.addEventListener("click", close);
+    prevBtn.addEventListener("click", () => box.show(box.index - 1));
+    nextBtn.addEventListener("click", () => box.show(box.index + 1));
+    // Bấm ra vùng tối bên ngoài ảnh cũng đóng
+    el.addEventListener("click", (e) => { if (e.target === el) close(); });
+    el.addEventListener("contextmenu", (e) => e.preventDefault());
+
+    document.addEventListener("keydown", (e) => {
+        if (!el.classList.contains("open")) return;
+        if (e.key === "Escape") close();
+        if (e.key === "ArrowLeft") box.show(box.index - 1);
+        if (e.key === "ArrowRight") box.show(box.index + 1);
+    });
+
+    // Vuốt trái/phải trên điện thoại để chuyển ảnh
+    let touchX = null;
+    el.addEventListener("touchstart", (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+    el.addEventListener("touchend", (e) => {
+        if (touchX === null) return;
+        const dx = e.changedTouches[0].clientX - touchX;
+        if (Math.abs(dx) > 50) box.show(box.index + (dx < 0 ? 1 : -1));
+        touchX = null;
+    });
+
+    return box;
+}
+
+// 8. Avatar đổi ảnh luân phiên — bấm để đổi, tự đổi mỗi 6 giây (dừng khi rê chuột)
+const AVATAR_ROTATE_MS = 6000;
+let avatarRotationStarted = false;
+
+function initAvatarRotation() {
+    const photos = ["images/Avatar.jpg", ...(CONFIG.avatarPhotos || [])];
+    const wrapper = document.querySelector(".avatar-wrapper");
+    const img = wrapper && wrapper.querySelector("img");
+    if (avatarRotationStarted || photos.length < 2 || !img) return;
+    avatarRotationStarted = true;
+
+    photos.slice(1).forEach((src) => { new Image().src = src; }); // tải trước cho mượt
+
+    const dotsBox = document.querySelector(".avatar-dots");
+    const dots = photos.map((_, i) => {
+        const dot = document.createElement("span");
+        dot.style.animationDelay = `${i * 60}ms`;
+        if (dotsBox) dotsBox.appendChild(dot);
+        return dot;
+    });
+
+    let index = 0;
+    let busy = false;
+    let hovering = false;
+
+    const show = (next) => {
+        if (busy) return;
+        busy = true;
+        index = (next + photos.length) % photos.length;
+        dots.forEach((dot, i) => dot.classList.toggle("active", i === index));
+
+        // Ảnh mới mờ dần lên trên ảnh cũ, xong thì gán vào ảnh gốc và bỏ lớp phủ
+        const layer = document.createElement("img");
+        layer.className = "avatar-layer";
+        layer.src = photos[index];
+        layer.alt = "";
+        wrapper.appendChild(layer);
+        requestAnimationFrame(() => requestAnimationFrame(() => layer.classList.add("visible")));
+        setTimeout(() => {
+            img.src = photos[index];
+            layer.remove();
+            busy = false;
+        }, 650);
+    };
+
+    dots[0].classList.add("active");
+    wrapper.classList.add("has-photos");
+    wrapper.setAttribute("role", "button");
+    wrapper.setAttribute("tabindex", "0");
+    wrapper.setAttribute("aria-label", "Đổi ảnh đại diện");
+
+    wrapper.addEventListener("click", () => show(index + 1));
+    wrapper.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        show(index + 1);
+    });
+    wrapper.addEventListener("mouseenter", () => { hovering = true; });
+    wrapper.addEventListener("mouseleave", () => { hovering = false; });
+
+    if (!prefersReducedMotion) {
+        setInterval(() => {
+            if (!hovering && !document.hidden) show(index + 1);
+        }, AVATAR_ROTATE_MS);
+    }
+}
+
+// 9. Spotlight: vầng sáng mờ chạy theo con trỏ trên nền (chỉ máy có chuột)
+(() => {
+    if (prefersReducedMotion || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+
+    const spotlight = document.createElement("div");
+    spotlight.className = "spotlight";
+    document.body.appendChild(spotlight);
+
+    let frame = null;
+    document.addEventListener("mousemove", (e) => {
+        if (frame) return;
+        frame = requestAnimationFrame(() => {
+            spotlight.style.setProperty("--mx", `${e.clientX}px`);
+            spotlight.style.setProperty("--my", `${e.clientY}px`);
+            spotlight.classList.add("on");
+            frame = null;
+        });
+    });
+    document.documentElement.addEventListener("mouseleave", () => spotlight.classList.remove("on"));
+})();
+
+// 10. Nhạc nền — mặc định tắt, khách bấm nút mới phát (trình duyệt cũng chặn tự phát)
+(() => {
+    if (!CONFIG.music) return;
+
+    const audio = new Audio(CONFIG.music);
+    audio.loop = true;
+    audio.volume = 0.4;
+    audio.preload = "none";
+
+    const button = createIconButton("music-toggle", "fa-music", "Bật nhạc nền");
+    button.setAttribute("aria-pressed", "false");
+    document.body.appendChild(button);
+
+    const setPlaying = (playing) => {
+        button.classList.toggle("playing", playing);
+        button.setAttribute("aria-pressed", String(playing));
+        button.setAttribute("aria-label", playing ? "Tắt nhạc nền" : "Bật nhạc nền");
+    };
+
+    button.addEventListener("click", () => {
+        if (audio.paused) {
+            audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+        } else {
+            audio.pause();
+            setPlaying(false);
+        }
+    });
+})();

@@ -41,7 +41,7 @@ body {
 }
 
 /* Playful paw cursor over anything clickable — swap from the carrot to signal "tap me" */
-a, button, .link-btn, #btn-donate {
+a, button, .link-btn, #btn-donate, .avatar-wrapper.has-photos {
     cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3E%3Cg fill='%23f0f0f0' stroke='%232b1400' stroke-width='1'%3E%3Cellipse cx='15' cy='19' rx='8' ry='6.5'/%3E%3Cellipse cx='6' cy='10' rx='3' ry='4'/%3E%3Cellipse cx='13' cy='5.5' rx='3' ry='4'/%3E%3Cellipse cx='20' cy='5.5' rx='3' ry='4'/%3E%3Cellipse cx='26' cy='11' rx='3' ry='4'/%3E%3C/g%3E%3C/svg%3E") 6 6, pointer;
 }
 
@@ -104,7 +104,9 @@ a, button, .link-btn, #btn-donate {
     transform: translateZ(20px); 
 }
 
-.avatar-wrapper img:hover {
+/* Hover theo wrapper (không phải theo img) để lớp ảnh chồng lên khi đổi avatar
+   cũng phóng to cùng lúc, không bị lệch với ảnh bên dưới. */
+.avatar-wrapper:hover img {
     transform: translateZ(40px) scale(1.08); 
     border-color: rgba(255, 255, 255, 0.6);
     box-shadow: 0 0 25px rgba(255, 255, 255, 0.3);
@@ -347,19 +349,19 @@ html:not(.js) #entrance-overlay {
    .entrance-logo được JS dời vào đây — không có hiệu ứng fade-in riêng nào
    cho nó cả, chỉ có animation "bay vào" lúc dời DOM.
    Chỉ ẩn khi có class "js" — nếu JS không chạy thì nội dung vẫn hiện bình thường. */
-.js .title, .js .subtitle, .js .talks-text, .js .link-btn, .js .donate-wrapper {
+.js .title, .js .subtitle, .js .tagline, .js .gallery, .js .talks-text, .js .link-btn, .js .donate-wrapper {
     opacity: 0;
     transform: translateY(20px);
 }
 
 /* 2. Cấu hình thời gian trượt mượt mà
    (Bỏ .link-btn ra khỏi đây vì nó đã có sẵn transition: all 0.3s nội tại ở phía trên) */
-.title, .subtitle, .talks-text, .donate-wrapper {
+.title, .subtitle, .tagline, .gallery, .talks-text, .donate-wrapper {
     transition: opacity 0.6s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 /* 3. Trạng thái hiển thị (JS sẽ add class này vào) */
-.js .title.fade-in, .js .subtitle.fade-in,
+.js .title.fade-in, .js .subtitle.fade-in, .js .tagline.fade-in, .js .gallery.fade-in,
 .js .talks-text.fade-in, .js .link-btn.fade-in, .js .donate-wrapper.fade-in {
     opacity: 1;
     transform: translateY(0); /* JS của VanillaTilt giờ đây đã có quyền ghi đè lên dòng này */
@@ -462,7 +464,310 @@ html:not(.js) #entrance-overlay {
         display: none;
     }
 
-    .js .title, .js .subtitle, .js .talks-text, .js .link-btn, .js .donate-wrapper {
+    .js .title, .js .subtitle, .js .tagline, .js .gallery, .js .talks-text, .js .link-btn, .js .donate-wrapper {
         transform: none;
     }
+}
+
+/* ==========================================================================
+   TAGLINE + CHẤM ĐỔI ẢNH AVATAR
+   ========================================================================== */
+.tagline {
+    font-style: italic;
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+    color: var(--text-main);
+    opacity: 0.75;
+    margin: 4px 0 22px;
+}
+
+.js .tagline.fade-in {
+    opacity: 0.75; /* giữ độ mờ riêng của tagline thay vì 1 */
+}
+
+.avatar-dots {
+    display: flex;
+    justify-content: center;
+    gap: 7px;
+    min-height: 6px;
+    margin-bottom: 8px;
+}
+
+.avatar-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    transition: background 0.3s ease, transform 0.3s ease;
+    animation: avatar-dot-in 0.5s ease both;
+}
+
+.avatar-dots span.active {
+    background: var(--text-main);
+    transform: scale(1.35);
+}
+
+@keyframes avatar-dot-in {
+    from { opacity: 0; transform: translateY(4px); }
+}
+
+/* Lớp ảnh mới mờ dần lên trên ảnh cũ khi đổi avatar */
+.avatar-wrapper .avatar-layer {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.6s ease;
+}
+
+.avatar-wrapper .avatar-layer.visible {
+    opacity: 1;
+}
+
+/* ==========================================================================
+   GALLERY ẢNH NỔI BẬT + LIGHTBOX
+   ========================================================================== */
+.gallery {
+    position: relative;
+    /* Tràn ra sát mép màn hình trên điện thoại (bù padding 20px của body) */
+    margin: 0 -20px 26px;
+}
+
+.gallery-track {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    padding: 4px 20px 10px;
+    scrollbar-width: none;
+    /* Mờ dần ở hai mép để báo là còn ảnh để vuốt */
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 22px, #000 calc(100% - 22px), transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 22px, #000 calc(100% - 22px), transparent 100%);
+}
+
+.gallery-track::-webkit-scrollbar {
+    display: none;
+}
+
+.gallery-item {
+    flex: 0 0 auto;
+    width: 122px;
+    aspect-ratio: 3 / 4;
+    padding: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    scroll-snap-align: center;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.gallery-item img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    -webkit-user-drag: none;
+    user-select: none;
+    /* Hiện dần (mờ → rõ) khi cuộn tới — JS thêm .is-visible */
+    opacity: 0;
+    filter: blur(8px);
+    transform: scale(1.08);
+    transition: opacity 0.7s ease, filter 0.7s ease, transform 0.5s ease;
+}
+
+.gallery-item.is-visible img {
+    opacity: 1;
+    filter: none;
+    transform: none;
+}
+
+.gallery-item:hover,
+.gallery-item:focus-visible {
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+    outline: none;
+}
+
+.gallery-item.is-visible:hover img {
+    transform: scale(1.06);
+}
+
+/* Nút cuộn trái/phải: chỉ hiện trên máy có chuột */
+.gallery-nav {
+    display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .gallery-nav {
+        display: flex;
+        position: absolute;
+        top: 50%;
+        width: 34px;
+        height: 34px;
+        margin-top: -20px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        border: 1px solid var(--glass-border);
+        background: rgba(10, 10, 10, 0.55);
+        color: var(--text-main);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        z-index: 2;
+        transition: opacity 0.3s ease;
+    }
+
+    .gallery-prev { left: 4px; }
+    .gallery-next { right: 4px; }
+
+    .gallery-nav:disabled {
+        opacity: 0;
+        pointer-events: none;
+    }
+}
+
+@media (min-width: 480px) {
+    .gallery {
+        margin: 0 0 30px;
+    }
+
+    .gallery-track {
+        padding: 4px 16px 10px;
+    }
+
+    .gallery-item {
+        width: 140px;
+    }
+}
+
+.lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(5, 5, 8, 0.93);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.lightbox.open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.lightbox-img {
+    max-width: min(92vw, 720px);
+    max-height: 82vh;
+    border-radius: 12px;
+    object-fit: contain;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    -webkit-user-drag: none;
+    user-select: none;
+    transform: scale(0.96);
+    transition: transform 0.3s ease, opacity 0.2s ease;
+}
+
+.lightbox.open .lightbox-img {
+    transform: none;
+}
+
+.lightbox-img.switching {
+    opacity: 0;
+}
+
+.lightbox-btn {
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    color: var(--text-main);
+    font-size: 1.1rem;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: background 0.2s ease;
+}
+
+.lightbox-btn:hover {
+    background: var(--glass-hover);
+}
+
+.lightbox-close { top: 16px; right: 16px; }
+.lightbox-prev  { left: 12px;  top: 50%; margin-top: -22px; }
+.lightbox-next  { right: 12px; top: 50%; margin-top: -22px; }
+
+.lightbox-counter {
+    position: absolute;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* ==========================================================================
+   SPOTLIGHT THEO CHUỘT + NÚT NHẠC NỀN
+   ========================================================================== */
+.spotlight {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1; /* sau nội dung, trên #particles-js (nằm sau trong DOM) */
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    background: radial-gradient(280px circle at var(--mx, 50%) var(--my, 50%), var(--spotlight-color, rgba(255, 255, 255, 0.07)), transparent 70%);
+}
+
+.spotlight.on {
+    opacity: 1;
+}
+
+.music-toggle {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 20;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    color: var(--text-main);
+    font-size: 0.95rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    opacity: 0.7;
+    transition: opacity 0.3s ease, box-shadow 0.3s ease;
+}
+
+.music-toggle:hover,
+.music-toggle.playing {
+    opacity: 1;
+}
+
+.music-toggle.playing {
+    box-shadow: 0 0 16px rgba(255, 255, 255, 0.25);
+}
+
+.music-toggle.playing i {
+    animation: music-pulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes music-pulse {
+    to { transform: scale(1.2); }
 }

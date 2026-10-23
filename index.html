@@ -105,6 +105,14 @@
                  loading finishes, instead of swapping to a lookalike copy. -->
             <noscript><img src="images/Avatar.jpg" alt="Bunny Profile"></noscript>
         </div>
+        <!-- Chấm báo ảnh avatar đang hiện (JS tự tạo khi BIO_CONFIG.avatarPhotos có ảnh) -->
+        <div class="avatar-dots" aria-hidden="true"></div>
+
+        <!-- Câu tagline dưới avatar — sửa thoải mái -->
+        <p class="tagline">sweet face, sly soul</p>
+
+        <!-- Gallery được script.js dựng ở đây từ BIO_CONFIG.galleryPhotos -->
+
         <div class="talks-text">TALKS</div>
 
         <!-- Links -->
@@ -158,6 +166,7 @@
     <!-- CÁC THƯ VIỆN HIỆU ỨNG JS -->
     <!-- script.js chạy trước để màn loading không phải chờ CDN; hai thư viện hiệu ứng
          tải "defer" và được khởi tạo trong DOMContentLoaded. -->
+    <script src="js/config.js"></script>
     <script src="js/script.js"></script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.1/vanilla-tilt.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
