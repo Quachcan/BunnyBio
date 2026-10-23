@@ -1,0 +1,215 @@
+/* css/halloween.css
+   Theme Halloween — mọi rule đều nằm dưới html.halloween (class do script trong
+   <head> bật theo ngày hoặc ?theme=halloween), nên khi không bật thì file này
+   không đụng gì tới giao diện gốc. */
+
+html.halloween {
+    --bg-dark: #0d0612;
+    --bg-light: #2a0f2e;
+    --glass-bg: rgba(140, 70, 200, 0.08);
+    --glass-border: rgba(255, 117, 24, 0.25);
+    --glass-hover: rgba(255, 117, 24, 0.15);
+    --text-main: #f5e9ff;
+    --pumpkin: #ff7518;
+    --potion: #7cff4f;
+    --witch: #9b4dff;
+}
+
+/* --- Nền & con trỏ ------------------------------------------------------- */
+
+html.halloween body {
+    background:
+        radial-gradient(ellipse at 50% -10%, rgba(255, 117, 24, 0.18), transparent 55%),
+        linear-gradient(160deg, var(--bg-dark) 0%, var(--bg-light) 100%);
+    background-attachment: fixed;
+
+    /* Bí ngô khắc mặt thay cho cà rốt — hotspot ở giữa quả bí */
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M15 10q0-5 4-7' stroke='%2347c96b' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3Cellipse cx='16' cy='19' rx='13' ry='10' fill='%23ff7518' stroke='%232b1400' stroke-width='1.2'/%3E%3Cellipse cx='16' cy='19' rx='5.5' ry='10' fill='none' stroke='%23c4500a' stroke-width='1'/%3E%3Cpath d='M8 17l3.5-4 3.5 4zM17 17l3.5-4 3.5 4z' fill='%232b1400'/%3E%3Cpath d='M9 22q7 6 14 0q-2.5 1.5-4.5 0.5l-1 1.5-1.5-1.5-1.5 1.5-1-1.5q-2 1-4.5-0.5z' fill='%232b1400'/%3E%3C/svg%3E") 16 16, auto;
+}
+
+/* Chân thỏ tím có móng vuốt thay cho chân thỏ trắng */
+html.halloween a,
+html.halloween button,
+html.halloween .link-btn,
+html.halloween #btn-donate {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3E%3Cg transform='translate(0 3)'%3E%3Cpath d='M5.2 6.3L6 2.6L6.8 6.3zM12.2 1.8L13 -1.9L13.8 1.8zM19.2 1.8L20 -1.9L20.8 1.8zM25.2 7.3L26 3.6L26.8 7.3z' fill='%23f5e9ff' stroke='%232b1400' stroke-width='0.6'/%3E%3Cg fill='%23b48cff' stroke='%232b1400' stroke-width='1'%3E%3Cellipse cx='15' cy='19' rx='8' ry='6.5'/%3E%3Cellipse cx='6' cy='10' rx='3' ry='4'/%3E%3Cellipse cx='13' cy='5.5' rx='3' ry='4'/%3E%3Cellipse cx='20' cy='5.5' rx='3' ry='4'/%3E%3Cellipse cx='26' cy='11' rx='3' ry='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") 6 6, pointer;
+}
+
+/* --- Chữ ------------------------------------------------------------------ */
+
+html.halloween .title {
+    color: var(--pumpkin);
+    text-shadow: 0 0 12px rgba(255, 117, 24, 0.6);
+}
+
+html.halloween .subtitle {
+    color: #fff;
+    text-shadow: 0 0 10px rgba(155, 77, 255, 0.9), 0 0 28px rgba(155, 77, 255, 0.5);
+}
+
+html.halloween .talks-text {
+    color: var(--potion);
+    text-shadow: 0 0 8px rgba(124, 255, 79, 0.6);
+}
+
+html.halloween .kaomoji {
+    color: var(--pumpkin);
+}
+
+/* --- Màn loading ---------------------------------------------------------- */
+
+/* Avatar nảy với quầng sáng như ánh nến trong quả bí */
+html.halloween .entrance-logo {
+    border-color: var(--pumpkin);
+    box-shadow: 0 0 18px rgba(255, 117, 24, 0.8), 0 0 40px rgba(255, 117, 24, 0.35);
+}
+
+/* Chữ "Bunny sly" được rót đầy bằng thuốc độc xanh */
+html.halloween .loading-text {
+    -webkit-text-stroke-color: rgba(124, 255, 79, 0.8);
+}
+
+html.halloween .loading-text::before {
+    color: var(--potion);
+    text-shadow: 0 0 12px rgba(124, 255, 79, 0.8), 0 0 30px rgba(124, 255, 79, 0.4);
+}
+
+/* --- Avatar: khung ma ám + mạng nhện ở góc ------------------------------- */
+
+html.halloween .avatar-wrapper {
+    box-shadow: 0 0 25px rgba(155, 77, 255, 0.45), 0 0 60px rgba(255, 117, 24, 0.15);
+}
+
+html.halloween .avatar-wrapper img {
+    border-color: rgba(255, 117, 24, 0.55);
+}
+
+html.halloween .avatar-wrapper::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 90px;
+    height: 90px;
+    pointer-events: none;
+    /* translateZ cao hơn ảnh (20–40px) để mạng nhện luôn nằm trên avatar */
+    transform: translateZ(45px);
+    opacity: 0.75;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%23f5e9ff' stroke-width='1.2' stroke-linecap='round'%3E%3Cpath d='M100 0L0 5M100 0L20 55M100 0L55 90M100 0L95 100'/%3E%3Cpath d='M75 1.25Q82 6 80 13.75Q87.5 14.5 88.75 22.5Q95 19 98.75 25'/%3E%3Cpath d='M50 2.5Q64 12 60 27.5Q75 29 77.5 45Q90 38 97.5 50'/%3E%3Cpath d='M25 3.75Q46 18 40 41.25Q62.5 43.5 66.25 67.5Q85 57 96.25 75'/%3E%3C/svg%3E") no-repeat top right / contain;
+}
+
+/* --- Nút link: dơi bay ra khi rê chuột ---------------------------------- */
+
+html.halloween .link-btn:hover {
+    border-color: rgba(255, 117, 24, 0.6);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 18px rgba(255, 117, 24, 0.35);
+}
+
+html.halloween .link-btn:not(#btn-donate)::after {
+    content: "";
+    position: absolute;
+    right: 22px;
+    top: 50%;
+    width: 26px;
+    height: 13px;
+    margin-top: -6px;
+    pointer-events: none;
+    opacity: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 32'%3E%3Cpath fill='%239b4dff' d='M32 12C30 6 28 6 27 10C22 4 12 2 2 6C7 8 8 12 7 16C11 13 15 14 17 18C20 15 24 16 26 20C28 18 30 18 32 22C34 18 36 18 38 20C40 16 44 15 47 18C49 14 53 13 57 16C56 12 57 8 62 6C52 2 42 4 37 10C36 6 34 6 32 12Z'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+
+html.halloween .link-btn:not(#btn-donate):hover::after {
+    animation: halloween-bat-escape 0.9s ease-out forwards;
+}
+
+@keyframes halloween-bat-escape {
+    0%   { opacity: 0; transform: translateZ(30px) translate(0, 0) scale(0.6); }
+    20%  { opacity: 1; }
+    50%  { transform: translateZ(30px) translate(14px, -22px) scale(1) rotate(-12deg); }
+    100% { opacity: 0; transform: translateZ(30px) translate(34px, -46px) scale(0.8) rotate(8deg); }
+}
+
+/* --- Nút donate: viền năng lượng cam → tím ------------------------------- */
+
+html.halloween #btn-donate::before {
+    background: conic-gradient(from 0deg, transparent 60%, var(--witch) 78%, var(--pumpkin) 92%, #ffd36b 100%);
+}
+
+html.halloween #btn-donate::after {
+    background: #1a0d1f;
+}
+
+html.halloween #btn-donate:hover {
+    box-shadow: 0 10px 30px rgba(255, 117, 24, 0.45), 0 0 22px rgba(155, 77, 255, 0.35) !important;
+}
+
+html.halloween #btn-donate:hover::after {
+    background: #2c1633;
+}
+
+/* --- Thỏ chạy: nón nâu → nón phù thủy tím, có ánh bí ngô ------------------ */
+
+html.halloween .bunny-runner {
+    filter: hue-rotate(235deg) saturate(1.6) drop-shadow(0 0 6px rgba(255, 117, 24, 0.55));
+}
+
+/* --- Ma & dơi trôi trên nền (JS tạo các phần tử này) -------------------- */
+
+.halloween-ghost,
+.halloween-bat {
+    position: fixed;
+    pointer-events: none;
+    z-index: -1; /* sau nội dung, cùng lớp với #particles-js */
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+
+.halloween-ghost {
+    width: 46px;
+    height: 56px;
+    opacity: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 48'%3E%3Cpath fill='%23f5e9ff' d='M20 2C10 2 4 10 4 20v26l6-5 5 5 5-5 5 5 5-5 6 5V20C36 10 30 2 20 2z'/%3E%3Cellipse cx='14.5' cy='19' rx='3' ry='4' fill='%232a0f2e'/%3E%3Cellipse cx='25.5' cy='19' rx='3' ry='4' fill='%232a0f2e'/%3E%3Cellipse cx='20' cy='29' rx='3' ry='3.5' fill='%232a0f2e'/%3E%3C/svg%3E");
+    animation: halloween-ghost-drift var(--ghost-duration, 22s) ease-in-out var(--ghost-delay, 0s) infinite;
+}
+
+@keyframes halloween-ghost-drift {
+    0%   { opacity: 0;    transform: translate(0, 0) scaleX(1); }
+    10%  { opacity: 0.16; }
+    50%  { opacity: 0.22; transform: translate(var(--ghost-dx, 40vw), -18vh) scaleX(1); }
+    51%  { transform: translate(var(--ghost-dx, 40vw), -18vh) scaleX(-1); }
+    90%  { opacity: 0.16; }
+    100% { opacity: 0;    transform: translate(0, 0) scaleX(-1); }
+}
+
+.halloween-bat {
+    width: 34px;
+    height: 17px;
+    left: -40px;
+    opacity: 0.55;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 32'%3E%3Cpath fill='%23140818' d='M32 12C30 6 28 6 27 10C22 4 12 2 2 6C7 8 8 12 7 16C11 13 15 14 17 18C20 15 24 16 26 20C28 18 30 18 32 22C34 18 36 18 38 20C40 16 44 15 47 18C49 14 53 13 57 16C56 12 57 8 62 6C52 2 42 4 37 10C36 6 34 6 32 12Z' stroke='%239b4dff' stroke-width='1.5'/%3E%3C/svg%3E");
+    animation:
+        halloween-bat-cross var(--bat-duration, 16s) linear var(--bat-delay, 0s) infinite,
+        halloween-bat-flap 0.35s ease-in-out infinite alternate;
+}
+
+@keyframes halloween-bat-cross {
+    0%   { left: -40px;            margin-top: 0; }
+    25%  { margin-top: -30px; }
+    50%  { margin-top: 10px; }
+    75%  { margin-top: -20px; }
+    100% { left: calc(100% + 40px); margin-top: 0; }
+}
+
+@keyframes halloween-bat-flap {
+    from { transform: scaleY(1); }
+    to   { transform: scaleY(0.45); }
+}
+
+/* Giảm chuyển động: bỏ hẳn ma/dơi trôi và dơi bay ra khỏi nút */
+@media (prefers-reduced-motion: reduce) {
+    .halloween-ghost,
+    .halloween-bat,
+    html.halloween .link-btn:not(#btn-donate)::after {
+        display: none;
+    }
+}

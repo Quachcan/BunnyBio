@@ -3,7 +3,7 @@
 // How long the loading screen (bounce + text fill) plays before the avatar
 // leaps into place. Both the CSS text-fill animation and the JS timer below
 // read from this single value so they can never drift out of sync.
-const LOADING_DURATION_MS = 5000;
+const LOADING_DURATION_MS = 2000;
 // How long the avatar takes to travel into place and then grow to full size.
 const MORPH_DURATION_MS = 1100;
 // Pause after the avatar has fully landed, before the page starts revealing —
@@ -17,19 +17,68 @@ const HOLE_PADDING_PX = 26;
 document.documentElement.style.setProperty("--loading-duration", `${LOADING_DURATION_MS / 1000}s`);
 document.documentElement.style.setProperty("--reveal-duration", `${REVEAL_DURATION_MS / 1000}s`);
 
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+// Bật/tắt bởi script trong <head> (theo ngày, hoặc ?theme=halloween)
+const isHalloween = document.documentElement.classList.contains("halloween");
+
 let holeTrackingRAF = null;
 
-window.addEventListener("load", () => {
+// Tells the failsafe timer in <head> that the entrance is running, so it
+// doesn't yank the overlay away mid-animation.
+window.__bioEntranceStarted = true;
+
+// Start right away instead of on window "load": "load" waits for every image
+// (QR codes included) and every CDN script, which could leave visitors staring
+// at the loading screen for a long time — or forever if a CDN hangs.
+// This script sits at the end of <body>, so all the elements already exist.
+(() => {
     const overlay = document.getElementById("entrance-overlay");
     const backdrop = overlay.querySelector(".entrance-backdrop");
     const entranceLogo = document.querySelector(".entrance-logo");
 
+    // The <head> failsafe already gave up on us (this file took >4s to arrive)
+    // and showed the page without the animation — nothing left to do.
+    if (!document.documentElement.classList.contains("js") || !entranceLogo) return;
+
+    if (prefersReducedMotion) {
+        skipEntrance(overlay, entranceLogo);
+        return;
+    }
+
     startHoleTracking(backdrop, entranceLogo);
 
-    setTimeout(() => {
+    let finished = false;
+    const finish = () => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timer);
+        overlay.removeEventListener("click", finish);
+        document.removeEventListener("keydown", finish);
         finishEntrance(overlay, backdrop, entranceLogo);
-    }, LOADING_DURATION_MS);
-});
+    };
+
+    const timer = setTimeout(finish, LOADING_DURATION_MS);
+    // Tap/click/any key skips the rest of the loading screen.
+    overlay.addEventListener("click", finish);
+    document.addEventListener("keydown", finish);
+})();
+
+/**
+ * No animation at all: put the avatar in its final home, drop the overlay and
+ * show the page. Used for reduced-motion visitors and browsers without WAAPI.
+ */
+function skipEntrance(overlay, entranceLogo) {
+    stopHoleTracking();
+    const avatarWrapper = document.querySelector(".avatar-wrapper");
+    if (entranceLogo && avatarWrapper) {
+        entranceLogo.style.animation = "none";
+        entranceLogo.classList.remove("entrance-logo");
+        entranceLogo.alt = "Bunny Profile";
+        avatarWrapper.appendChild(entranceLogo);
+    }
+    overlay.classList.add("hidden");
+    runEntranceSequence();
+}
 
 /**
  * Every frame, re-centers the backdrop's mask hole on the avatar's CURRENT
@@ -80,9 +129,7 @@ function finishEntrance(overlay, backdrop, entranceLogo) {
 
     // Fallback for older browsers without Element.animate(), or if markup changed.
     if (!entranceLogo || !avatarWrapper || typeof entranceLogo.animate !== "function") {
-        stopHoleTracking();
-        overlay.classList.add("hidden");
-        runEntranceSequence();
+        skipEntrance(overlay, entranceLogo);
         return;
     }
 
@@ -196,59 +243,115 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// 2. Khởi tạo hiệu ứng nghiêng 3D
-if (typeof VanillaTilt !== "undefined") {
-    VanillaTilt.init(document.querySelectorAll(".link-btn, .avatar-wrapper"), {
-        max: 12,
-        speed: 400,
-        glare: true,
-        "max-glare": 0.25,
-        perspective: 1000
+// 4. Theme Halloween: đổi chữ + thả vài con ma, con dơi trôi trên nền
+if (isHalloween) {
+    applyHalloweenText();
+    if (!prefersReducedMotion) spawnHalloweenCritters();
+}
+
+function applyHalloweenText() {
+    const kaomoji = document.querySelector(".kaomoji");
+    if (kaomoji) kaomoji.textContent = "👻 ε ⋒ x ⋒ 3 🎃";
+
+    const donateBtn = document.getElementById("btn-donate");
+    if (donateBtn) donateBtn.innerHTML = '<i class="fa-solid fa-carrot"></i> Trick or carrot? 🎃🐰';
+}
+
+function spawnHalloweenCritters() {
+    // [top, left, quãng trôi ngang, thời gian, độ trễ]
+    const ghosts = [
+        ["68vh", "4vw", "38vw", "24s", "1s"],
+        ["30vh", "70vw", "-30vw", "28s", "9s"],
+        ["85vh", "45vw", "-36vw", "26s", "16s"]
+    ];
+    ghosts.forEach(([top, left, dx, duration, delay]) => {
+        const ghost = document.createElement("div");
+        ghost.className = "halloween-ghost";
+        ghost.style.top = top;
+        ghost.style.left = left;
+        ghost.style.setProperty("--ghost-dx", dx);
+        ghost.style.setProperty("--ghost-duration", duration);
+        ghost.style.setProperty("--ghost-delay", delay);
+        document.body.appendChild(ghost);
     });
+
+    // [top, thời gian bay ngang, độ trễ]
+    const bats = [["12vh", "14s", "3s"], ["22vh", "19s", "10s"]];
+    bats.forEach(([top, duration, delay]) => {
+        const bat = document.createElement("div");
+        bat.className = "halloween-bat";
+        bat.style.top = top;
+        bat.style.setProperty("--bat-duration", duration);
+        bat.style.setProperty("--bat-delay", delay);
+        document.body.appendChild(bat);
+    });
+}
+
+// Thư viện CDN được tải bằng "defer" (sau file này), nên phải đợi DOMContentLoaded
+// mới chắc chắn chúng đã chạy xong. Người dùng bật giảm chuyển động thì bỏ qua cả hai.
+document.addEventListener("DOMContentLoaded", () => {
+    if (prefersReducedMotion) return;
+    initTilt();
+    initParticles();
+});
+
+// 2. Khởi tạo hiệu ứng nghiêng 3D
+function initTilt() {
+    if (typeof VanillaTilt !== "undefined") {
+        VanillaTilt.init(document.querySelectorAll(".link-btn, .avatar-wrapper"), {
+            max: 12,
+            speed: 400,
+            glare: true,
+            "max-glare": 0.25,
+            perspective: 1000
+        });
+    }
 }
 
 // 3. Khởi tạo hệ thống hạt nền (Particles)
-if (typeof particlesJS !== "undefined") {
-    particlesJS("particles-js", {
-        "particles": {
-            "number": { "value": 50, "density": { "enable": true, "value_area": 800 } },
-            "color": { "value": "#ffffff" },
-            "shape": { "type": "circle" },
-            "opacity": { 
-                "value": 0.2, 
-                "random": true, 
-                "anim": { "enable": true, "speed": 1, "opacity_min": 0.05, "sync": false }
+function initParticles() {
+    if (typeof particlesJS !== "undefined") {
+        particlesJS("particles-js", {
+            "particles": {
+                "number": { "value": 50, "density": { "enable": true, "value_area": 800 } },
+                // Halloween: đốm ma trơi cam/xanh/tím, sáng hơn một chút
+                "color": { "value": isHalloween ? ["#ff7518", "#7cff4f", "#b48cff"] : "#ffffff" },
+                "shape": { "type": "circle" },
+                "opacity": {
+                    "value": isHalloween ? 0.45 : 0.2,
+                    "random": true, 
+                    "anim": { "enable": true, "speed": 1, "opacity_min": 0.05, "sync": false }
+                },
+                "size": { 
+                    "value": isHalloween ? 3 : 2,
+                    "random": true
+                },
+                "line_linked": {
+                    "enable": true,
+                    "distance": 150,
+                    "color": isHalloween ? "#9b4dff" : "#ffffff", // mạng nhện tím
+                    "opacity": isHalloween ? 0.15 : 0.1,
+                    "width": 1
+                },
+                "move": {
+                    "enable": true,
+                    "speed": 1,
+                    "direction": isHalloween ? "top" : "none", // ma trơi bay lên
+                    "random": true, 
+                    "out_mode": "out" 
+                }
             },
-            "size": { 
-                "value": 2, 
-                "random": true 
+            "interactivity": {
+                "detect_on": "window",
+                "events": {
+                    "onhover": { "enable": true, "mode": "grab" },
+                    "resize": true
+                },
+                "modes": {
+                    "grab": { "distance": 150, "line_linked": { "opacity": 0.3 } }
+                }
             },
-            "line_linked": { 
-                "enable": true, 
-                "distance": 150, 
-                "color": "#ffffff", 
-                "opacity": 0.1, 
-                "width": 1 
-            },
-            "move": { 
-                "enable": true, 
-                "speed": 1, 
-                "direction": "none", 
-                "random": true, 
-                "out_mode": "out" 
-            }
-        },
-        "interactivity": {
-            "detect_on": "window",
-            "events": {
-                "onhover": { "enable": true, "mode": "grab" },
-                "resize": true
-            },
-            "modes": {
-                "grab": { "distance": 150, "line_linked": { "opacity": 0.3 } }
-            }
-        },
-        "retina_detect": true
-    });
+            "retina_detect": true
+        });
+    }
 }
-

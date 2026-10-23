@@ -247,6 +247,11 @@ a, button, .link-btn, #btn-donate {
     visibility: hidden;
 }
 
+/* Không có JS (hoặc failsafe trong <head> đã gỡ class "js") thì bỏ hẳn màn loading */
+html:not(.js) #entrance-overlay {
+    display: none;
+}
+
 /* The actual black layer, kept separate from .entrance-logo/.loading-text
    (its siblings, painted after it so they sit on top) — a mask on THIS
    element can never hide them, since mask only affects an element's own
@@ -340,8 +345,9 @@ a, button, .link-btn, #btn-donate {
    .avatar-wrapper KHÔNG nằm trong nhóm này nữa: nó luôn hiển thị sẵn (rỗng,
    che bởi overlay loading phía trên) vì giờ avatar thật là chính cái
    .entrance-logo được JS dời vào đây — không có hiệu ứng fade-in riêng nào
-   cho nó cả, chỉ có animation "bay vào" lúc dời DOM. */
-.title, .subtitle, .talks-text, .link-btn, .donate-wrapper {
+   cho nó cả, chỉ có animation "bay vào" lúc dời DOM.
+   Chỉ ẩn khi có class "js" — nếu JS không chạy thì nội dung vẫn hiện bình thường. */
+.js .title, .js .subtitle, .js .talks-text, .js .link-btn, .js .donate-wrapper {
     opacity: 0;
     transform: translateY(20px);
 }
@@ -353,8 +359,8 @@ a, button, .link-btn, #btn-donate {
 }
 
 /* 3. Trạng thái hiển thị (JS sẽ add class này vào) */
-.title.fade-in, .subtitle.fade-in,
-.talks-text.fade-in, .link-btn.fade-in, .donate-wrapper.fade-in {
+.js .title.fade-in, .js .subtitle.fade-in,
+.js .talks-text.fade-in, .js .link-btn.fade-in, .js .donate-wrapper.fade-in {
     opacity: 1;
     transform: translateY(0); /* JS của VanillaTilt giờ đây đã có quyền ghi đè lên dòng này */
 }
@@ -438,4 +444,25 @@ a, button, .link-btn, #btn-donate {
 @keyframes neon-spin {
     0% { transform: translate(-50%, -50%) rotate(0deg); }
     100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+/* ==========================================================================
+   GIẢM CHUYỂN ĐỘNG (prefers-reduced-motion)
+   Người dùng bật "giảm chuyển động" trong hệ điều hành: JS đã bỏ qua màn
+   loading, hạt nền và hiệu ứng nghiêng; ở đây tắt nốt các animation lặp vô hạn.
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .bunny-runner {
+        display: none;
+    }
+
+    .js .title, .js .subtitle, .js .talks-text, .js .link-btn, .js .donate-wrapper {
+        transform: none;
+    }
 }

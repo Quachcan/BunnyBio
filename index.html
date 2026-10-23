@@ -4,7 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bunny Evil Bio</title>
-    
+    <meta name="description" content="Bunny Evil — Bunny sly. Facebook, Instagram, X, Discord và chỗ mua cà rốt cho thỏ 🐰">
+
+    <!-- Ảnh xem trước khi chia sẻ link (Facebook, Discord, X...).
+         og:image / og:url phải là URL đầy đủ — đổi theo nếu đổi domain Vercel. -->
+    <link rel="canonical" href="https://bunnysly-bio.vercel.app/">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://bunnysly-bio.vercel.app/">
+    <meta property="og:title" content="Bunny Evil">
+    <meta property="og:description" content="Bunny sly — tất cả link của Bunny ở một chỗ 🐰">
+    <meta property="og:image" content="https://bunnysly-bio.vercel.app/images/Avatar.jpg">
+    <meta name="twitter:card" content="summary">
+    <meta name="theme-color" content="#0a0a0a">
+
+    <!-- Có JS thì bật class "js" ngay (trước khi vẽ trang) để CSS ẩn nội dung chờ
+         màn loading. Nếu js/script.js không chạy được (lỗi, bị chặn...) thì sau 4s
+         tự gỡ màn loading và hiện trang, thay vì kẹt mãi ở màn đen. -->
+    <script>
+        document.documentElement.classList.add("js");
+
+        // Theme Halloween tự bật từ 20/10 đến hết 1/11 (giờ máy người xem).
+        // Xem thử bất kỳ lúc nào: ?theme=halloween — tắt hẳn: ?theme=default
+        (function () {
+            var theme = new URLSearchParams(location.search).get("theme");
+            var now = new Date(), month = now.getMonth(), day = now.getDate();
+            var inSeason = (month === 9 && day >= 20) || (month === 10 && day <= 1);
+            if (theme === "halloween" || (inSeason && theme !== "default")) {
+                document.documentElement.classList.add("halloween");
+            }
+        })();
+
+        setTimeout(function () {
+            if (window.__bioEntranceStarted) return;
+            var logo = document.querySelector(".entrance-logo");
+            var wrapper = document.querySelector(".avatar-wrapper");
+            if (logo && wrapper) {
+                logo.classList.remove("entrance-logo");
+                logo.alt = "Bunny Profile";
+                wrapper.appendChild(logo);
+            }
+            document.documentElement.classList.remove("js");
+        }, 4000);
+    </script>
+
     <!-- Các thư viện bên ngoài (External Libraries) -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;900&family=Qwitcher+Grypen:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -12,6 +54,8 @@
     
     <!-- Link tới file giao diện của bạn -->
     <link rel="stylesheet" href="css/style.css">
+    <!-- Theme theo mùa: mọi rule đều nằm dưới html.halloween, không bật thì không ảnh hưởng gì -->
+    <link rel="stylesheet" href="css/halloween.css">
 </head>
 
 <body>
@@ -36,6 +80,7 @@
             <!-- Intentionally empty: the loading-screen avatar (.entrance-logo)
                  is this same <img> element — script.js moves it in here once
                  loading finishes, instead of swapping to a lookalike copy. -->
+            <noscript><img src="images/Avatar.jpg" alt="Bunny Profile"></noscript>
         </div>
         <div class="talks-text">TALKS</div>
 
@@ -88,9 +133,11 @@
     </div>
 
     <!-- CÁC THƯ VIỆN HIỆU ỨNG JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.1/vanilla-tilt.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <!-- script.js chạy trước để màn loading không phải chờ CDN; hai thư viện hiệu ứng
+         tải "defer" và được khởi tạo trong DOMContentLoaded. -->
     <script src="js/script.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.1/vanilla-tilt.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 
     <div class="bunny-runner"></div>
 </body>
