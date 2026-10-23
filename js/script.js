@@ -217,8 +217,8 @@ function revealPage(overlay, backdrop) {
 
     // Fade the loading text out right away instead of leaving it sitting on
     // top of the now-visible page until the whole overlay disappears later.
-    const loadingText = overlay.querySelector(".loading-text");
-    if (loadingText) loadingText.style.opacity = "0";
+    // Same for the "tap to enter" music hint, if it was shown.
+    overlay.querySelectorAll(".loading-text, .entrance-hint").forEach((el) => { el.style.opacity = "0"; });
 
     runEntranceSequence();
 
@@ -755,31 +755,179 @@ function initAvatarRotation() {
     document.documentElement.addEventListener("mouseleave", () => spotlight.classList.remove("on"));
 })();
 
-// 10. Nhạc nền — mặc định tắt, khách bấm nút mới phát (trình duyệt cũng chặn tự phát)
+// 10. Mini player nhạc nền — tự phát khi được phép, không thì phát ở lần chạm đầu tiên.
+// Đang phát thì mở rộng thành thanh có tên bài + timeline để tua; tạm dừng thì vài giây sau thu gọn lại.
+const MUSIC_COLLAPSE_MS = 4000;
+const MUSIC_VOLUME = 0.4;
+const MUSIC_FADE_MS = 2000;
+
 (() => {
     if (!CONFIG.music) return;
 
     const audio = new Audio(CONFIG.music);
     audio.loop = true;
-    audio.volume = 0.4;
+    audio.volume = MUSIC_VOLUME;
     audio.preload = "none";
 
-    const button = createIconButton("music-toggle", "fa-music", "Bật nhạc nền");
-    button.setAttribute("aria-pressed", "false");
-    document.body.appendChild(button);
+    const player = document.createElement("div");
+    player.className = "music-player";
+    player.setAttribute("role", "region");
+    player.setAttribute("aria-label", "Trình phát nhạc");
+    player.innerHTML = `
+        <div class="music-panel">
+            <div class="music-meta">
+                <span class="music-eq" aria-hidden="true"><i></i><i></i><i></i></span>
+                <span class="music-title"></span>
+            </div>
+            <input type="range" class="music-seek" min="0" max="0" step="0.1" value="0" aria-label="Tua nhạc" disabled>
+            <div class="music-times"><span class="music-current">0:00</span><span class="music-duration">--:--</span></div>
+        </div>`;
+    const toggle = createIconButton("music-toggle", "fa-music", "Bật nhạc nền");
+    toggle.setAttribute("aria-pressed", "false");
+    player.appendChild(toggle);
+    document.body.appendChild(player);
 
-    const setPlaying = (playing) => {
-        button.classList.toggle("playing", playing);
-        button.setAttribute("aria-pressed", String(playing));
-        button.setAttribute("aria-label", playing ? "Tắt nhạc nền" : "Bật nhạc nền");
+    const icon = toggle.querySelector("i");
+    const seek = player.querySelector(".music-seek");
+    const current = player.querySelector(".music-current");
+    const duration = player.querySelector(".music-duration");
+    player.querySelector(".music-title").textContent = CONFIG.musicTitle || "Nhạc nền";
+
+    const formatTime = (seconds) => {
+        if (!isFinite(seconds)) return "--:--";
+        const s = Math.floor(seconds);
+        return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
     };
 
-    button.addEventListener("click", () => {
+    const showProgress = (time) => {
+        const total = audio.duration || 0;
+        seek.value = time;
+        seek.style.setProperty("--progress", total ? `${(time / total) * 100}%` : "0%");
+        current.textContent = formatTime(time);
+    };
+
+    // --- Mở rộng / thu gọn ------------------------------------------------
+    let started = false;
+    let hovering = false;
+    let collapseTimer = null;
+
+    const expand = () => {
+        clearTimeout(collapseTimer);
+        player.classList.add("expanded");
+    };
+    const collapseLater = (delay) => {
+        clearTimeout(collapseTimer);
+        collapseTimer = setTimeout(() => {
+            // Chỉ giữ mở khi đang thao tác bằng bàn phím (:focus-visible), bấm chuột thì vẫn thu gọn
+            if (audio.paused && !hovering && !player.querySelector(":focus-visible")) {
+                player.classList.remove("expanded");
+            }
+        }, delay);
+    };
+
+    player.addEventListener("mouseenter", () => {
+        hovering = true;
+        if (started) expand();
+    });
+    player.addEventListener("mouseleave", () => {
+        hovering = false;
+        if (audio.paused) collapseLater(1500);
+    });
+
+    // --- Phát / tạm dừng --------------------------------------------------
+    const setPlaying = (playing) => {
+        player.classList.toggle("playing", playing);
+        icon.className = `fa-solid ${playing ? "fa-pause" : started ? "fa-play" : "fa-music"}`;
+        toggle.setAttribute("aria-pressed", String(playing));
+        toggle.setAttribute("aria-label", playing ? "Tạm dừng nhạc nền" : "Phát nhạc nền");
+        if (playing) expand();
+        else collapseLater(MUSIC_COLLAPSE_MS);
+    };
+
+    // Nhạc to dần từ 0 lên MUSIC_VOLUME thay vì phát ầm lên ngay
+    let fadeFrame = null;
+    const fadeIn = () => {
+        cancelAnimationFrame(fadeFrame);
+        const startAt = performance.now();
+        audio.volume = 0;
+        const step = (now) => {
+            const t = Math.min((now - startAt) / MUSIC_FADE_MS, 1);
+            audio.volume = MUSIC_VOLUME * t;
+            if (t < 1) fadeFrame = requestAnimationFrame(step);
+        };
+        fadeFrame = requestAnimationFrame(step);
+    };
+
+    // Trả về true nếu phát được (trình duyệt có thể chặn khi khách chưa chạm/bấm gì)
+    const play = () => audio.play().then(() => {
+        started = true;
+        fadeIn();
+        return true;
+    }).catch(() => false);
+
+    // Khách đã tự bấm tạm dừng thì không bao giờ tự bật lại nữa
+    let userPaused = false;
+
+    toggle.addEventListener("click", () => {
         if (audio.paused) {
-            audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+            userPaused = false;
+            play();
         } else {
+            userPaused = true;
             audio.pause();
-            setPlaying(false);
         }
+    });
+    audio.addEventListener("play", () => setPlaying(true));
+    audio.addEventListener("pause", () => setPlaying(false));
+
+    // --- Tự phát -------------------------------------------------------------
+    // 1) Thử phát ngay khi trang load (Chrome đôi khi cho phép với khách quen).
+    // 2) Bị chặn thì phát ở lần chạm/bấm/nhấn phím đầu tiên ở bất kỳ đâu trên trang
+    //    — kể cả chạm vào màn loading để bỏ qua, nhạc vào đúng lúc avatar bay lên.
+    const unlockEvents = ["pointerdown", "touchend", "click", "keydown"];
+    const stopListening = () => unlockEvents.forEach((type) => document.removeEventListener(type, onFirstInteraction, true));
+    const onFirstInteraction = (e) => {
+        // Bấm thẳng vào nút ♪ thì để nút tự xử lý, tránh vừa bật đã tắt
+        if (player.contains(e.target)) { stopListening(); return; }
+        if (userPaused || !audio.paused) { stopListening(); return; }
+        play().then((ok) => { if (ok) stopListening(); });
+    };
+    unlockEvents.forEach((type) => document.addEventListener(type, onFirstInteraction, true));
+
+    play().then((ok) => {
+        if (ok) {
+            stopListening();
+            return;
+        }
+        // Gợi ý khách chạm vào màn loading (nếu màn loading vẫn còn đang hiện)
+        const overlay = document.getElementById("entrance-overlay");
+        if (overlay && !overlay.classList.contains("hidden")) {
+            const hint = document.createElement("div");
+            hint.className = "entrance-hint";
+            hint.textContent = "chạm để vào 🎧";
+            overlay.appendChild(hint);
+        }
+    });
+
+    // --- Timeline ----------------------------------------------------------
+    let dragging = false;
+
+    audio.addEventListener("loadedmetadata", () => {
+        seek.max = audio.duration;
+        seek.disabled = false;
+        duration.textContent = formatTime(audio.duration);
+    });
+    audio.addEventListener("timeupdate", () => {
+        if (!dragging) showProgress(audio.currentTime);
+    });
+
+    // Kéo thanh tua: cập nhật số giây ngay, thả tay mới nhảy nhạc tới đó
+    seek.addEventListener("input", () => {
+        dragging = true;
+        showProgress(Number(seek.value));
+    });
+    seek.addEventListener("change", () => {
+        audio.currentTime = Number(seek.value);
+        dragging = false;
     });
 })();

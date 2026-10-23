@@ -20,5 +20,8 @@ const BIO_CONFIG = {
 
     // Nhạc nền — mặc định tắt, khách bấm nút ♪ ở góc trên mới phát. Để "" thì ẩn nút.
     // Ví dụ: "audio/bgm.mp3"
-    music: "audio/bgm.m4a"
+    music: "audio/bgm.m4a",
+
+    // Tên bài hiện trên trình phát nhạc. Để "" thì hiện "Nhạc nền".
+    musicTitle: "Bunny's playlist"
 };

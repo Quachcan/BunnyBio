@@ -34,7 +34,8 @@ html.christmas a,
 html.christmas button,
 html.christmas .link-btn,
 html.christmas #btn-donate,
-html.christmas .avatar-wrapper.has-photos {
+html.christmas .avatar-wrapper.has-photos,
+html.christmas .music-seek {
     cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3E%3Cg fill='%23e63946' stroke='%23ffffff' stroke-width='1.2'%3E%3Cellipse cx='15' cy='19' rx='8' ry='6.5'/%3E%3Cellipse cx='6' cy='10' rx='3' ry='4'/%3E%3Cellipse cx='13' cy='5.5' rx='3' ry='4'/%3E%3Cellipse cx='20' cy='5.5' rx='3' ry='4'/%3E%3Cellipse cx='26' cy='11' rx='3' ry='4'/%3E%3C/g%3E%3C/svg%3E") 6 6, pointer;
 }
 
