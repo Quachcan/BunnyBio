@@ -208,6 +208,45 @@ html.halloween .bunny-runner {
     to   { transform: scaleY(0.45); }
 }
 
+/* --- Màn mở đầu "đèn pin" (JS: runFlashlightEntrance) -------------------- */
+
+/* Trong lúc soi đèn, avatar phải nằm DƯỚI bóng tối (bình thường nó nằm trên
+   lớp phủ để bay vào), để chỉ thấy được khi đèn soi trúng. */
+.flashlight-entrance .avatar-wrapper {
+    z-index: 1;
+}
+
+/* Lỗ sáng viền mờ như vệt đèn pin, thay cho lỗ tròn viền sắc của màn loading thường */
+.entrance-backdrop.flashlight {
+    background: #050207;
+    -webkit-mask-image: radial-gradient(circle at var(--reveal-x) var(--reveal-y), transparent 0, transparent calc(var(--reveal-radius) * 0.45), rgba(0, 0, 0, 0.55) calc(var(--reveal-radius) * 0.8), black var(--reveal-radius));
+    mask-image: radial-gradient(circle at var(--reveal-x) var(--reveal-y), transparent 0, transparent calc(var(--reveal-radius) * 0.45), rgba(0, 0, 0, 0.55) calc(var(--reveal-radius) * 0.8), black var(--reveal-radius));
+}
+
+/* Ánh vàng ấm trong vệt đèn */
+.entrance-glow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at var(--reveal-x) var(--reveal-y), rgba(255, 196, 120, 0.22), rgba(255, 140, 60, 0.08) calc(var(--reveal-radius) * 0.7), transparent var(--reveal-radius));
+    mix-blend-mode: screen;
+    transition: opacity 0.5s ease;
+}
+
+/* Avatar "giật mình" khi bị đèn soi trúng */
+html.halloween .avatar-wrapper.spotted img {
+    animation: halloween-spotted 0.7s ease;
+}
+
+@keyframes halloween-spotted {
+    0%   { filter: none; transform: translateZ(20px); }
+    15%  { filter: brightness(1.5) drop-shadow(0 0 18px rgba(255, 117, 24, 0.9)); transform: translateZ(20px) translateX(-5px) rotate(-2deg); }
+    35%  { transform: translateZ(20px) translateX(5px) rotate(2deg); }
+    55%  { transform: translateZ(20px) translateX(-3px) rotate(-1deg); }
+    75%  { filter: brightness(1.15); transform: translateZ(20px) translateX(1px); }
+    100% { filter: none; transform: translateZ(20px); }
+}
+
 /* Giảm chuyển động: bỏ hẳn ma/dơi trôi và dơi bay ra khỏi nút */
 @media (prefers-reduced-motion: reduce) {
     .halloween-ghost,

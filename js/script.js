@@ -54,6 +54,12 @@ window.__bioEntranceStarted = true;
         return;
     }
 
+    // Halloween có màn mở đầu riêng: đèn pin soi trong bóng tối rồi tìm ra avatar
+    if (isHalloween) {
+        runFlashlightEntrance(overlay, backdrop, entranceLogo);
+        return;
+    }
+
     startHoleTracking(backdrop, entranceLogo);
 
     let finished = false;
@@ -71,6 +77,145 @@ window.__bioEntranceStarted = true;
     overlay.addEventListener("click", finish);
     document.addEventListener("keydown", finish);
 })();
+
+/**
+ * Màn mở đầu Halloween: màn hình tối đen, một đốm đèn pin chớp chớp rồi lia qua
+ * vài chỗ ngẫu nhiên trên trang (trang thật nằm sẵn phía sau bóng tối nên soi tới
+ * đâu thấy tới đó), cuối cùng tìm thấy avatar, avatar "giật mình", rồi ánh sáng
+ * lan ra cả màn hình. Dùng lại lỗ tròn của .entrance-backdrop (--reveal-x/y/radius),
+ * chỉ thêm viền mờ (.flashlight) và một lớp ánh vàng ấm (.entrance-glow).
+ * Chạm/bấm/nhấn phím bất kỳ lúc nào để bỏ qua.
+ */
+function runFlashlightEntrance(overlay, backdrop, entranceLogo) {
+    const root = document.documentElement;
+    const wrapper = document.querySelector(".avatar-wrapper");
+
+    // Avatar nằm sẵn ở chỗ của nó, và (khác màn loading thường) nằm DƯỚI bóng tối
+    root.classList.add("flashlight-entrance");
+    entranceLogo.style.animation = "none";
+    entranceLogo.classList.remove("entrance-logo");
+    entranceLogo.alt = "Bunny Profile";
+    wrapper.appendChild(entranceLogo);
+
+    // Nội dung trang hiện sẵn phía sau bóng tối để đèn soi tới thấy được
+    setTimeout(runEntranceSequence, 0);
+
+    const loadingText = overlay.querySelector(".loading-text");
+    if (loadingText) loadingText.style.display = "none";
+
+    const glow = document.createElement("div");
+    glow.className = "entrance-glow";
+    backdrop.after(glow);
+    backdrop.classList.add("flashlight");
+    backdrop.style.transition = "none";
+
+    // --reveal-radius được đăng ký với inherits:false, nên phải gán riêng cho từng lớp
+    const setLight = (x, y, r) => {
+        [backdrop, glow].forEach((el) => {
+            el.style.setProperty("--reveal-x", `${x}px`);
+            el.style.setProperty("--reveal-y", `${y}px`);
+            el.style.setProperty("--reveal-radius", `${Math.max(r, 0)}px`);
+        });
+    };
+
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const beam = Math.max(55, Math.min(vw, vh) * 0.14);
+
+    // Vài điểm ngẫu nhiên, cách nhau đủ xa để đèn lia qua lại rõ ràng
+    const randomPoint = (prev) => {
+        for (let i = 0; i < 20; i++) {
+            const p = { x: vw * (0.1 + Math.random() * 0.8), y: vh * (0.12 + Math.random() * 0.76) };
+            if (!prev || Math.hypot(p.x - prev.x, p.y - prev.y) > Math.min(vw, vh) * 0.3) return p;
+        }
+        return { x: vw / 2, y: vh / 2 };
+    };
+    const points = [];
+    for (let i = 0; i < 3; i++) points.push(randomPoint(points[i - 1]));
+
+    // --- Vòng vẽ: mỗi khung hình đặt lỗ sáng theo state + rung nhẹ như cầm tay ---
+    const state = { x: points[0].x, y: points[0].y, r: 0 };
+    let tweenState = null;
+    let frame = null;
+    let cancelled = false;
+
+    const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+    const tween = (to, ms) => new Promise((resolve) => {
+        tweenState = { from: { ...state }, to, start: performance.now(), ms, resolve };
+    });
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    const render = (now) => {
+        if (tweenState) {
+            const t = Math.min((now - tweenState.start) / tweenState.ms, 1);
+            const k = ease(t);
+            Object.keys(tweenState.to).forEach((key) => {
+                state[key] = tweenState.from[key] + (tweenState.to[key] - tweenState.from[key]) * k;
+            });
+            if (t >= 1) {
+                const done = tweenState.resolve;
+                tweenState = null;
+                done();
+            }
+        }
+        const shake = state.r > beam * 1.5 ? 0 : 4; // soi trúng avatar rồi thì đứng yên
+        setLight(state.x + Math.sin(now / 170) * shake, state.y + Math.cos(now / 230) * shake, state.r);
+        frame = requestAnimationFrame(render);
+    };
+    setLight(state.x, state.y, 0);
+    frame = requestAnimationFrame(render);
+
+    // --- Kết thúc: ánh sáng lan ra cả màn hình từ chỗ đèn đang soi ---------------
+    let revealed = false;
+    const reveal = () => {
+        if (revealed) return;
+        revealed = true;
+        cancelled = true;
+        cancelAnimationFrame(frame);
+        overlay.removeEventListener("click", reveal);
+        document.removeEventListener("keydown", reveal);
+        glow.style.opacity = "0";
+        revealPage(overlay, backdrop);
+        setTimeout(() => {
+            root.classList.remove("flashlight-entrance");
+            glow.remove();
+        }, REVEAL_DURATION_MS);
+    };
+    overlay.addEventListener("click", reveal);
+    document.addEventListener("keydown", reveal);
+
+    // --- Kịch bản ----------------------------------------------------------------
+    (async () => {
+        await wait(600); // tối đen một nhịp
+
+        // Đèn chớp chớp như sắp hết pin rồi mới sáng hẳn: [bật/tắt, giữ bao lâu]
+        for (const [on, ms] of [[1, 70], [0, 110], [1, 50], [0, 220], [1, 0]]) {
+            if (cancelled) return;
+            state.r = on ? beam : 0;
+            if (ms) await wait(ms);
+        }
+
+        for (const p of points.slice(1)) {
+            await wait(280);
+            if (cancelled) return;
+            await tween({ x: p.x, y: p.y }, 650);
+        }
+        await wait(280);
+        if (cancelled) return;
+
+        // Tìm thấy avatar: lia tới, mở to đúng khung ảnh, avatar giật mình
+        const rect = wrapper.getBoundingClientRect();
+        await tween({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }, 750);
+        if (cancelled) return;
+        await wait(150);
+        await tween({ r: Math.hypot(rect.width, rect.height) / 2 + HOLE_PADDING_PX }, 450);
+        if (cancelled) return;
+        wrapper.classList.add("spotted");
+        setTimeout(() => wrapper.classList.remove("spotted"), 900);
+        await wait(800);
+        reveal();
+    })();
+}
 
 /**
  * No animation at all: put the avatar in its final home, drop the overlay and
