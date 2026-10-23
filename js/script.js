@@ -855,26 +855,34 @@ const MUSIC_FADE_MS = 2000;
         else collapseLater(MUSIC_COLLAPSE_MS);
     };
 
-    // Nhạc to dần từ 0 lên MUSIC_VOLUME thay vì phát ầm lên ngay
-    let fadeFrame = null;
+    // Nhạc to dần từ 0 lên MUSIC_VOLUME thay vì phát ầm lên ngay.
+    // Dùng setInterval chứ không dùng requestAnimationFrame: rAF có thể bị trình duyệt
+    // tạm ngưng (tab chưa hiện, webview trong app...) làm âm lượng kẹt ở 0 → phát mà không có tiếng.
+    let fadeTimer = null;
     const fadeIn = () => {
-        cancelAnimationFrame(fadeFrame);
-        const startAt = performance.now();
+        clearInterval(fadeTimer);
+        const startAt = Date.now();
         audio.volume = 0;
-        const step = (now) => {
-            const t = Math.min((now - startAt) / MUSIC_FADE_MS, 1);
+        fadeTimer = setInterval(() => {
+            const t = Math.min((Date.now() - startAt) / MUSIC_FADE_MS, 1);
             audio.volume = MUSIC_VOLUME * t;
-            if (t < 1) fadeFrame = requestAnimationFrame(step);
-        };
-        fadeFrame = requestAnimationFrame(step);
+            if (t >= 1) clearInterval(fadeTimer);
+        }, 50);
     };
 
+    // Lần phát gần nhất có nằm trong một thao tác thật của khách (chạm/bấm/phím) không
+    let startedWithGesture = false;
+
     // Trả về true nếu phát được (trình duyệt có thể chặn khi khách chưa chạm/bấm gì)
-    const play = () => audio.play().then(() => {
-        started = true;
-        fadeIn();
-        return true;
-    }).catch(() => false);
+    const play = () => {
+        const withGesture = Boolean(navigator.userActivation && navigator.userActivation.isActive);
+        return audio.play().then(() => {
+            started = true;
+            startedWithGesture = withGesture;
+            fadeIn();
+            return true;
+        }).catch(() => false);
+    };
 
     // Khách đã tự bấm tạm dừng thì không bao giờ tự bật lại nữa
     let userPaused = false;
@@ -895,18 +903,32 @@ const MUSIC_FADE_MS = 2000;
     // 1) Thử phát ngay khi trang load (Chrome đôi khi cho phép với khách quen).
     // 2) Bị chặn thì phát ở lần chạm/bấm/nhấn phím đầu tiên ở bất kỳ đâu trên trang
     //    — kể cả chạm vào màn loading để bỏ qua, nhạc vào đúng lúc avatar bay lên.
-    const unlockEvents = ["pointerdown", "touchend", "click", "keydown"];
+    // Chỉ những sự kiện trình duyệt coi là "thao tác thật" (pointerdown khi chạm thì không tính)
+    const unlockEvents = ["touchend", "click", "keydown"];
     const stopListening = () => unlockEvents.forEach((type) => document.removeEventListener(type, onFirstInteraction, true));
     const onFirstInteraction = (e) => {
         // Bấm thẳng vào nút ♪ thì để nút tự xử lý, tránh vừa bật đã tắt
-        if (player.contains(e.target)) { stopListening(); return; }
-        if (userPaused || !audio.paused) { stopListening(); return; }
+        if (player.contains(e.target) || userPaused) { stopListening(); return; }
+
+        if (!audio.paused) {
+            // Nhạc đã "phát" từ lúc load mà khách chưa chạm gì: vài trình duyệt (nhất là
+            // trình duyệt trong app trên Android) cho chạy nhưng tắt tiếng tới khi có thao tác thật.
+            // Phát lại ngay trong lần chạm này (giữ nguyên vị trí bài) để chắc chắn có tiếng.
+            if (!startedWithGesture) {
+                audio.pause();
+                play();
+            }
+            stopListening();
+            return;
+        }
         play().then((ok) => { if (ok) stopListening(); });
     };
     unlockEvents.forEach((type) => document.addEventListener(type, onFirstInteraction, true));
 
     play().then((ok) => {
-        if (ok) {
+        // Chỉ thôi chờ lần chạm đầu khi chắc chắn nhạc có tiếng. Phát được mà chưa có
+        // thao tác thật thì vẫn chờ, vì có thể đang bị trình duyệt tắt tiếng (xem ở trên).
+        if (ok && startedWithGesture) {
             stopListening();
             return;
         }
